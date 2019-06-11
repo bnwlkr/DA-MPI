@@ -1,3 +1,6 @@
-main: main.c src/profiler.c
-	mpicc -o main main.c src/profiler.c
+main: main.c profiler.c
+	mpicc -o main main.c profiler.c
 
+
+clean:
+	rm -rf *.o main

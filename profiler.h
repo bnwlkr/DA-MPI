@@ -4,11 +4,11 @@
 #include <string.h>
 
 #define TRIALS 100
-#define DATA_SIZE 10
+#define DATA_SIZE 1000
 
 
 enum MType {
-  RESPOND,
+  REQUEST,
   RESPONSE,
   RESULTS,
   GO,
@@ -36,7 +36,7 @@ static void node (char* data, int rank, int n);
 /*  ping a process TRIALS times
  *  
  */
-static void ping (char* data, int to);
+static void measure (char* data, double* results, int rank, int n);
 
 
 

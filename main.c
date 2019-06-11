@@ -2,13 +2,11 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <unistd.h>
-#include "src/profiler.h"
+#include "profiler.h"
 
 void run (int rank, int n) {
     MPIX_Profile(rank, n);
 }
-
-
 
 
 int main(int argc, char** argv) {
