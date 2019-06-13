@@ -1,11 +1,11 @@
-##PROPOSAL
+## PROPOSAL
 
 MPI’s most common use case is in High-Performance Computing (HPC). As many HPC tasks are time-critical (e.g. weather prediction), small optimizations can be extremely valuable. 
 
 The MPI specification — and presumedly most implementations — allow MPI clusters to be distributed across cores within a machine, machines with a network (LAN), and networks within other networks (WAN). This means that there can be some degree of variability in the speeds of the links between processes. Also, It is usually the case that different MPI nodes will communicate with each other at different frequencies. Some might be coupled together with data dependencies, while others remain completely independent. Plainly put, the ones that talk a lot should be closer together (paired by faster links) to improve performance.
 
 
-###EXAMPLE
+### EXAMPLE
 
 Three processes A,B,C
 
@@ -16,7 +16,7 @@ Initially computer1 runs A,B and computer2 runs C.
 The profiler discovers that processes running on computer1 can communicate faster than processes running separately on computer1 and computer2. During runtime, it discovers that A and C communicate far more frequently than A and B. C is migrated (swapped with B) to computer1 during runtime. Then A and B start communicating more frequently, and the reverse occurs.
 
 
-###MILESTONES
+### MILESTONES
 
 1. System profiling
 
