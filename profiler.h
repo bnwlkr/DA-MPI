@@ -19,13 +19,13 @@ enum MType {
 /* participate in system profiling.
  * all results should be sent to rank 0;
  */
-void MPIX_Profile (int rank, int n);
+void MPIX_Profile (int rank, int n, double* results);
 
 
 /*  routine of the data collecting process (rank 0)
  *
  */
-static void origin (char* data, int n);
+static void origin (char* data, int n, double* results);
 
 /*  routine of the nodes
  *
@@ -36,7 +36,7 @@ static void node (char* data, int rank, int n);
 /*  ping a process TRIALS times
  *  
  */
-static void measure (char* data, double* results, int rank, int n);
+static void measure (char* data, int rank, int n, double* results);
 
 
 
