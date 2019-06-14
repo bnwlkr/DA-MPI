@@ -2,20 +2,11 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <unistd.h>
-#include "profiler.h"
+#include "profile.h"
 
 void run (int rank, int n) {
    double * results = calloc (sizeof(double), n*n);
    MPIX_Profile(rank, n, results);
-   if (!rank) {
-     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-          if (i != j) {
-            printf("%d --> %d: %f\n", i, j, results[i*n + j]);
-          }
-        }
-     }
-  }
 }
 
 
