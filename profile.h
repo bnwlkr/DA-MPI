@@ -4,39 +4,31 @@
 #include <string.h>
 
 #define TRIALS 100
-#define DATA_SIZE 1000
-
+#define DATA_SIZE 40
 
 enum MType {
-  REQUEST,
-  RESPONSE,
-  RESULTS,
-  GO,
-  FINISH
+    REQUEST,
+    RESPONSE,
+    NEXT,
 };
 
-
-/* participate in system profiling.
- * all results should be sent to rank 0;
+/* called by all processes to participate in system profiling.
+ * allocate windows on all processes that will share profiling data amongst eachother
+ * select the 'best-connected' node and allocate a frequency table on it, notify every node of the best connected node
+ * 
  */
-void MPIX_Profile (int rank, int n, double* results);
+void MPIX_Profile (int rank, int n);
 
 
-/*  routine of the data collecting process (rank 0)
- *
- */
-static void origin (char* data, int n, double* results);
-
-/*  routine of the nodes
- *
- */
-static void node (char* data, int rank, int n);
-
-
-/*  ping a process TRIALS times
+/*  ping all other processes, and store the timings in results [0,n)
  *  
  */
-static void measure (char* data, int rank, int n, double* results);
+static void measure (int rank, int n, char* data, double* results);
 
+
+/*  respond to other processes
+ *
+ */
+static void respond (char* data);
 
 
