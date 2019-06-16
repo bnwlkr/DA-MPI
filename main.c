@@ -5,6 +5,7 @@
 #include "profile.h"
 
 
+
 int main(int argc, char** argv) {
     int n;
     int rank;
@@ -14,10 +15,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &n);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Get_processor_name(procname, &len);
-    
-    
-    printf("rank %d reporting for duty from %s\n", rank, procname);
-    
+  
     
     MPIX_Profile(rank, n);
     

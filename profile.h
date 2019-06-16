@@ -3,13 +3,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #define TRIALS 100
 #define DATA_SIZE 40
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 
 enum MType {
     REQUEST,
     RESPONSE,
     NEXT,
+};
+
+// will have to modify this to include a translation service
+
+struct Info {
+ int proc;
+ int n;
+ double* delays;
+ int bnode;
+ MPI_Win win;
+ int* wbase;
 };
 
 /* called by all processes to participate in system profiling.
@@ -20,15 +36,9 @@ enum MType {
 void MPIX_Profile (int rank, int n);
 
 
-/*  ping all other processes, and store the timings in results [0,n)
- *  
- */
-static void measure (int rank, int n, char* data, double* results);
-
-
-/*  respond to other processes
+/*  get the frequency of communication between proc A and proc B
  *
  */
-static void respond (char* data);
+int count (int a, int b); 
 
 
