@@ -1,11 +1,13 @@
 #include "profile.h"
 
-static struct Info info;
+static struct ProcInfo info; // global because native to process, not rank (doesn't move in migration)
 
+/* calculate offset of this proc's block in edge (frequency and delay) tables */
 static int offset (int a) {
   return (info.n-1)*a - (a-1)*a/2;
 }
 
+/* determine which node is best suited to holding frequency and translation tables (best-connected node) */
 static int best () {
   int best = 0;
   double best_delay = 0.0;
@@ -28,12 +30,15 @@ static int best () {
   return best;
 }
 
+
+/* free everything that MPIX_Profile built for this proc */
 static void destroy () {
   free(info.delays);
   free(info.wbase);
   MPI_Win_free(&info.win);
 }
 
+/* respond to requests for latency measurement from other procs */
 static void respond (char* data) {
   MPI_Status status;
   int done = 0;
@@ -49,6 +54,7 @@ static void respond (char* data) {
   }
 }
 
+/* measure latencies with other procs */
 static void measure (char* data) {
   int offset_ = offset(info.proc);
   for (int i = info.proc+1; i < info.n; i++) {
@@ -62,15 +68,6 @@ static void measure (char* data) {
   }
 }
 
-int count (int a, int b) {
-  int min = MIN(a,b);
-  int max = MAX(a,b);
-  int offset_ = offset(min)+max-1;
-  int result;
-  printf("%d getting frequency from %d\n", info.proc, info.bnode);
-  MPI_Get(&result, 1, MPI_INT, info.bnode, offset_, 1, MPI_INT, info.win);
-  return result;
-}
 
 void MPIX_Profile (int proc, int n) {
   info.proc = proc;
@@ -93,7 +90,6 @@ void MPIX_Profile (int proc, int n) {
       }
   }
   MPI_Win_fence(0, win);
-
   for (int i = 0; i < n; i++) {
     if (i != proc) {
      int n_read = n-i-1;
@@ -101,25 +97,49 @@ void MPIX_Profile (int proc, int n) {
      MPI_Get(&info.delays[offset_], n_read, MPI_DOUBLE, i, offset_, n_read, MPI_DOUBLE, win);
     }
   }
+  for (int i = 0; i < n_edges; i++) {
+    printf("proc %d has %f at %d\n", info.proc, info.delays[i], i);
+  }
   MPI_Win_fence(0, win);
   MPI_Win_free(&win);
   
   info.bnode = best();  
-  int best = proc == info.bnode;
+  
+  /* ===================== */
+  info.wbase = calloc(n_edges, sizeof(int));
+  info.wbase[0] = 10;
+  info.wbase[1] = 30;
+  info.wbase[2] = 50;
+  MPI_Win w;
+  MPI_Win_create(info.wbase, n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &w);
+  MPI_Win_fence(0, w);
+  
+  int r[n_edges];
+  r[0] = -1;
+  r[1] = -1;
+  r[2] = -1;
+  int main = 2;
+  if (proc != main) {
+    MPI_Get(r, n_edges, MPI_INT, main, 0, 1, MPI_INT, w);
+    for (int i = 0; i < n_edges; i++) {
+      printf("proc %d found %d in %d\n", info.proc, r[i], main);
+    }
+  }
+  
+  
+  
+  MPI_Win_fence(0, w);
+  
 
-  info.wbase = calloc(sizeof(int), best ? n_edges : 0);
-    
-  MPI_Win_create(info.wbase, best ? n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info.win);
   
-  /* CURRENT ISSUE: CHANING LOCAL MEMORY DOESNT SEEM TO UPDATE WINDOW FOR RMA */
   
-
-  printf("%d\n", info.bnode);
-  MPI_Win_fence(0, info.win);
-  printf("proc %d, %d--%d = %d\n", proc, 0,1,count(0,1));
-  MPI_Win_fence(0, info.win);
   
-  destroy();
+  
+  
+  
+  
+  
+  //destroy();
   
   
 }

@@ -19,7 +19,7 @@ enum MType {
 
 // will have to modify this to include a translation service
 
-struct Info {
+struct ProcInfo {
  int proc;
  int n;
  double* delays;
@@ -36,9 +36,9 @@ struct Info {
 void MPIX_Profile (int rank, int n);
 
 
-/*  get the frequency of communication between proc A and proc B
+/*  get the frequency of communication between rank A and rank B
  *
  */
-int count (int a, int b); 
+int frequency (int a, int b); 
 
 
