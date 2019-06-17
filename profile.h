@@ -10,6 +10,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+extern struct ProcInfo info;
 
 enum MType {
     REQUEST,
@@ -22,6 +23,7 @@ enum MType {
 struct ProcInfo {
  int proc;
  int n;
+ int n_edges;
  double* delays;
  int bnode;
  MPI_Win win;
@@ -33,12 +35,25 @@ struct ProcInfo {
  * select the 'best-connected' node and allocate a frequency table on it, notify every node of the best connected node
  * 
  */
-void MPIX_Profile (int rank, int n);
+void DAMPI_Profile (int rank, int n);
 
-
-/*  get the frequency of communication between rank A and rank B
+/*  free memory and windows
  *
  */
-int frequency (int a, int b); 
+void DAMPI_Finalize ();
 
+/*  Synchronize processes on bnode's info window
+ *
+ */
 
+void DAMPI_Info_sync();
+
+/*  get the offset in the edge tables for this edge
+ *
+ */ 
+int DAMPI_Eoffset (int a, int b);
+
+/*  display all DAMPI-relevant information for aiding in diagnosing issues
+ *
+ */
+void DAMPI_Diag();

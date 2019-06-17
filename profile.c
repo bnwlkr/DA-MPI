@@ -1,10 +1,17 @@
 #include "profile.h"
 
-static struct ProcInfo info; // global because native to process, not rank (doesn't move in migration)
+struct ProcInfo info; // global because native to process, not rank (doesn't move in migration)
 
 /* calculate offset of this proc's block in edge (frequency and delay) tables */
-static int offset (int a) {
+int boffset (int a) {
   return (info.n-1)*a - (a-1)*a/2;
+}
+
+int DAMPI_Eoffset (int a, int b) {
+  int min = MIN(a,b);
+  int max = MAX(a,b);
+  int boffset_ = boffset(min);
+  return boffset_+max-min-1;
 }
 
 /* determine which node is best suited to holding frequency and translation tables (best-connected node) */
@@ -13,13 +20,13 @@ static int best () {
   double best_delay = 0.0;
   for (int i = 0; i < info.n; i++) {
     double delay = 0.0;
-    int offset_ = offset(i);
+    int offset_ = boffset(i);
     int n_read = info.n-i-1;
     for (int j = offset_; j < offset_ + n_read; j++) {
       delay += info.delays[j];
     }
     for (int j = 0; j < i; j++) {
-      int offset_ = offset(j);
+      int offset_ = boffset(j);
       delay += info.delays[offset_+i-j-1];
     }
     if (delay < best_delay || best_delay == 0.0) {
@@ -30,13 +37,6 @@ static int best () {
   return best;
 }
 
-
-/* free everything that MPIX_Profile built for this proc */
-static void destroy () {
-  free(info.delays);
-  free(info.wbase);
-  MPI_Win_free(&info.win);
-}
 
 /* respond to requests for latency measurement from other procs */
 static void respond (char* data) {
@@ -56,7 +56,7 @@ static void respond (char* data) {
 
 /* measure latencies with other procs */
 static void measure (char* data) {
-  int offset_ = offset(info.proc);
+  int offset_ = boffset(info.proc);
   for (int i = info.proc+1; i < info.n; i++) {
     double t0 = MPI_Wtime();
     for (int j = 0; j < TRIALS; j++) {
@@ -69,13 +69,18 @@ static void measure (char* data) {
 }
 
 
-void MPIX_Profile (int proc, int n) {
+void DAMPI_Finalize () {
+  free(info.delays);
+  MPI_Win_free(&info.win);
+}
+
+void DAMPI_Profile (int proc, int n) {
   info.proc = proc;
   info.n = n;
-  int n_edges = n*(n-1)/2;
-  info.delays = calloc(n_edges, sizeof(double));
+  info.n_edges = n*(n-1)/2;
+  info.delays = calloc(info.n_edges, sizeof(double));
   MPI_Win win;
-  MPI_Win_create(info.delays, n_edges*sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+  MPI_Win_create(info.delays, info.n_edges*sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
   char data[DATA_SIZE];
   switch (proc) {
     case 0:
@@ -93,59 +98,50 @@ void MPIX_Profile (int proc, int n) {
   for (int i = 0; i < n; i++) {
     if (i != proc) {
      int n_read = n-i-1;
-     int offset_= offset(i);
+     int offset_= boffset(i);
      MPI_Get(&info.delays[offset_], n_read, MPI_DOUBLE, i, offset_, n_read, MPI_DOUBLE, win);
     }
   }
-  for (int i = 0; i < n_edges; i++) {
-    printf("proc %d has %f at %d\n", info.proc, info.delays[i], i);
-  }
+  
   MPI_Win_fence(0, win);
   MPI_Win_free(&win);
-  
+
   info.bnode = best();  
-  
-  /* ===================== */
-  info.wbase = calloc(n_edges, sizeof(int));
-  info.wbase[0] = 10;
-  info.wbase[1] = 30;
-  info.wbase[2] = 50;
-  MPI_Win w;
-  MPI_Win_create(info.wbase, n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &w);
-  MPI_Win_fence(0, w);
-  
-  int r[n_edges];
-  r[0] = -1;
-  r[1] = -1;
-  r[2] = -1;
-  int main = 2;
-  if (proc != main) {
-    MPI_Get(r, n_edges, MPI_INT, main, 0, 1, MPI_INT, w);
-    for (int i = 0; i < n_edges; i++) {
-      printf("proc %d found %d in %d\n", info.proc, r[i], main);
+  MPI_Win_allocate(proc == info.bnode ? info.n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info.wbase, &info.win);
+  memset(info.wbase, 0, proc == info.bnode ? info.n_edges : 0);
+}
+
+
+void DAMPI_Info_sync() {
+  MPI_Win_fence(0, info.win);
+}
+
+
+void DAMPI_Diag() {
+  if (info.proc == info.bnode) {
+    printf("n: %d, n_edges: %d, bnode: %d\n", info.n, info.n_edges, info.bnode);
+    for (int i = 0; i < info.n_edges; i++) {
+      printf("freq[%d] = %d\n", i, info.wbase[i]);
+    }
+    for (int i = 0; i < info.n_edges; i++) {
+      printf ("delays[%d] = %f\n", i, info.delays[i]);
     }
   }
-  
-  
-  
-  MPI_Win_fence(0, w);
-  
-
-  
-  
-  
-  
-  
-  
-  
-  
-  //destroy();
-  
-  
 }
 
 
 
+//  MPI_Win_fence(0, info.win);
+//  
+//  int freqs[n_edges];
+//  
+//  MPI_Get(freqs, n_edges, MPI_INT, info.bnode, 0, n_edges, MPI_INT, info.win);
+//  
+//  for (int i=0; i<n_edges; i++) {
+//    printf("freqs[%d] = %d\n", i, freqs[i]);
+//  }
+//  
+//  MPI_Win_fence(0, info.win);
 
 
 

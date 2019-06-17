@@ -1,5 +1,5 @@
-main: main.c profile.c
-	mpicc -o main main.c profile.c
+main: main.c profile.c send.c
+	mpicc -o main main.c profile.c send.c
 
 
 clean:
