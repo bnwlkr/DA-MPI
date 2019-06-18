@@ -7,8 +7,6 @@
 #ifndef dampi_h
 #define dampi_h
 
-#include <setjmp.h>
-
 #include "profile.h"
 #include "send.h"
 #include "migrate.h"

@@ -3,7 +3,7 @@
 struct ProcInfo info; // global because native to process, not rank (doesn't move in migration)
 
 /* calculate offset of this proc's block in edge (frequency and delay) tables */
-int boffset (int a) {
+static int boffset (int a) {
   return (info.n-1)*a - (a-1)*a/2;
 }
 
@@ -125,21 +125,3 @@ void DAMPI_Diag() {
     }
   }
 }
-
-
-
-//  MPI_Win_fence(0, info.bwin);
-//  
-//  int freqs[n_edges];
-//  
-//  MPI_Get(freqs, n_edges, MPI_INT, info.bnode, 0, n_edges, MPI_INT, info.bwin);
-//  
-//  for (int i=0; i<n_edges; i++) {
-//    printf("freqs[%d] = %d\n", i, freqs[i]);
-//  }
-//  
-//  MPI_Win_fence(0, info.bwin);
-
-
-
-

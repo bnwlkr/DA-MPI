@@ -26,7 +26,7 @@ struct BNodeTable {
 struct ProcInfo {
  int proc, n, n_edges, bnode;
  MPI_Win envwin, bwin;
- jmp_buf* env;
+ char* env;
  double* delays;
  struct BNodeTable* bt;
 };

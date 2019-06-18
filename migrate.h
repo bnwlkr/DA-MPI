@@ -10,12 +10,7 @@
 /*  processes regularly enter this function to see if a migration is necessary. If they decide that they should move to another proc, they will post that information at the bnode.
  *
  */
-void DAMPI_Airlock();
+int DAMPI_Airlock();
 
 
-/*  allocate memory that will be carried across processes in a migration
- *
- */
- 
-int DAMPI_Alloc();
 

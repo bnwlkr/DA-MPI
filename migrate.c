@@ -1,19 +1,15 @@
 #include "migrate.h"
-
-
+//
+//#define DAMPI_LOOP DAMPI_Save(); while (DAMPI_Airlock()) 
 //
 //void run (int rank) {
-//  jmp_buf buf;
-//  while (1) {
-//    if (!setjmp(buf)) DAMPI_Airlock(&buf);
+//  
+//  DAMPI_LOOP {
 //    
-//    
+//  
+//  
 //  }
-//  
-//   
-//  
-//  
-//  
+//
 //  
 //  
 //  
@@ -24,24 +20,31 @@
 //
 //
 //
-//
-//
-//
-//void DAMPI_Airlock(buf) {
-//
-//  longjmp(jmp_buf, 1);
-//
-//
-//
+//static void save () {
 //  
+//  
+//
+//
 //}
 //
-
-
-
-
-
-
+//
+//int DAMPI_Airlock() {
+//
+//
+//
+//
+//
+//
+//
+//    return 1;
+//}
+//
+//
+//
+//
+//
+//
+//
 
 
 
