@@ -71,7 +71,7 @@ static void measure (char* data) {
 
 void DAMPI_Finalize () {
   free(info.delays);
-  MPI_Win_free(&info.win);
+  MPI_Win_free(&info.bwin);
 }
 
 void DAMPI_Profile (int proc, int n) {
@@ -107,21 +107,18 @@ void DAMPI_Profile (int proc, int n) {
   MPI_Win_free(&win);
 
   info.bnode = best();  
-  MPI_Win_allocate(proc == info.bnode ? info.n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info.wbase, &info.win);
-  memset(info.wbase, 0, proc == info.bnode ? info.n_edges : 0);
+  MPI_Win_allocate(proc == info.bnode ? sizeof(struct BNodeTable) + info.n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info.bt, &info.bwin);
+  memset(info.bt->freqs, 0, info.proc == info.bnode ? info.n_edges*sizeof(int) : 0);
+  
 }
-
-
-void DAMPI_Info_sync() {
-  MPI_Win_fence(0, info.win);
-}
-
 
 void DAMPI_Diag() {
   if (info.proc == info.bnode) {
     printf("n: %d, n_edges: %d, bnode: %d\n", info.n, info.n_edges, info.bnode);
+    printf("a: %d, b: %d\n", info.bt->a, info.bt->b);
     for (int i = 0; i < info.n_edges; i++) {
-      printf("freq[%d] = %d\n", i, info.wbase[i]);
+      
+      printf("freq[%d] = %d\n", i, info.bt->freqs[i]);
     }
     for (int i = 0; i < info.n_edges; i++) {
       printf ("delays[%d] = %f\n", i, info.delays[i]);
@@ -131,17 +128,17 @@ void DAMPI_Diag() {
 
 
 
-//  MPI_Win_fence(0, info.win);
+//  MPI_Win_fence(0, info.bwin);
 //  
 //  int freqs[n_edges];
 //  
-//  MPI_Get(freqs, n_edges, MPI_INT, info.bnode, 0, n_edges, MPI_INT, info.win);
+//  MPI_Get(freqs, n_edges, MPI_INT, info.bnode, 0, n_edges, MPI_INT, info.bwin);
 //  
 //  for (int i=0; i<n_edges; i++) {
 //    printf("freqs[%d] = %d\n", i, freqs[i]);
 //  }
 //  
-//  MPI_Win_fence(0, info.win);
+//  MPI_Win_fence(0, info.bwin);
 
 
 

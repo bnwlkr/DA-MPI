@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <setjmp.h>
 
 
 #define TRIALS 100
@@ -18,16 +19,16 @@ enum MType {
     NEXT,
 };
 
-// will have to modify this to include a translation service
+struct BNodeTable {
+  int a, b, freqs[];
+};
 
 struct ProcInfo {
- int proc;
- int n;
- int n_edges;
+ int proc, n, n_edges, bnode;
+ MPI_Win envwin, bwin;
+ jmp_buf* env;
  double* delays;
- int bnode;
- MPI_Win win;
- int* wbase;
+ struct BNodeTable* bt;
 };
 
 /* called by all processes to participate in system profiling.
@@ -41,12 +42,6 @@ void DAMPI_Profile (int rank, int n);
  *
  */
 void DAMPI_Finalize ();
-
-/*  Synchronize processes on bnode's info window
- *
- */
-
-void DAMPI_Info_sync();
 
 /*  get the offset in the edge tables for this edge
  *

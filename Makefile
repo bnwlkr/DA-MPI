@@ -1,6 +1,5 @@
-main: main.c profile.c send.c
-	mpicc -o main main.c profile.c send.c
-
+main: *.c *.h
+	mpicc -Wno-deprecated-declarations -o main *.c
 
 clean:
 	rm -rf *.o main
