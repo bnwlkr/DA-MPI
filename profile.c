@@ -82,16 +82,51 @@ void DAMPI_Finalize () {
   free(info);
 }
 
-void profile (int proc, int n) {
+
+static void sync_sc_sizes ();
+static void sync_funcs () {
+  MPI_Win win;
+  MPI_Win_create(info->rankfuncs, info->n*sizeof(dampi_func), sizeof(dampi_func), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+  MPI_Win_fence(0, win);
+  
+  MPI_Win_fence(0, win);
+  MPI_Win_free(&win);
+
+}
+
+// first dump all information at the best node, then read information back
+static void sync_data () {
+  printf("in sync data\n");
+  MPI_Win delay_win;
+  MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Win_fence(0, delay_win);
+  MPI_Put(&info->delays[boffset(info->proc)], info->n-info->proc-1, MPI_DOUBLE, 0, boffset(info->proc), info->n-info->proc-1, MPI_DOUBLE, delay_win);
+  MPI_Win_fence(0, delay_win);
+  
+  MPI_Win_fence(0, delay_win);
+  MPI_Get(info->delays, info->n_edges, MPI_DOUBLE, 0, 0, info->n_edges, MPI_DOUBLE, delay_win);
+  MPI_Win_fence(0, delay_win);
+  
+
+
+}
+
+
+static void sync_delays () {
+  
+}
+
+void profile (int proc, int n, dampi_func f, int sc_size) {
   info = malloc(sizeof(struct ProcInfo));
-  //info->rankfuncs = malloc();
   info->rankprocs = malloc(sizeof(int)*n);
+  //info->rankfuncs = malloc(sizeof(dampi_func)*n);
+  //info->rankfuncs[proc] = f;
   info->proc = proc;
+  info->rank = proc;
   info->n = n;
   info->n_edges = n*(n-1)/2;
   info->delays = calloc(info->n_edges, sizeof(double));
-  MPI_Win win;
-  MPI_Win_create(info->delays, info->n_edges*sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
   char data[DATA_SIZE];
   switch (proc) {
     case 0:
@@ -105,24 +140,14 @@ void profile (int proc, int n) {
         MPI_Ssend(data, DATA_SIZE, MPI_BYTE, proc+1, NEXT, MPI_COMM_WORLD);
       }
   }
-  MPI_Win_fence(0, win);
-  for (int i = 0; i < n; i++) {
-    if (i != proc) {
-     int n_read = n-i-1;
-     int offset_= boffset(i);
-     MPI_Get(&info->delays[offset_], n_read, MPI_DOUBLE, i, offset_, n_read, MPI_DOUBLE, win);
-    }
-  }
-  MPI_Win_fence(0, win);
-  MPI_Win_free(&win);
-
+  sync_data();
   info->bnode = best();  
   MPI_Win_allocate(proc == info->bnode ? sizeof(struct BNodeTable) + info->n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
   memset(info->bt->freq, 0, info->proc == info->bnode ? info->n_edges*sizeof(int) : 0);
   for (int i = 0; i < info->n; i++) {
     info->rankprocs[i] = i;
   }
-  info->rank = info->proc;
+
 }
 
 

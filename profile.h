@@ -2,6 +2,7 @@
 #define PROFILE_H
 
 #include <mpi.h>
+#include "dampi.h"
 
 #define TRIALS 100
 #define DATA_SIZE 40
@@ -11,7 +12,6 @@
 
 extern struct ProcInfo * info;
 
-typedef void(*f)(void* x);
 
 enum MType {
     REQUEST,
@@ -29,9 +29,8 @@ struct ProcInfo {
  MPI_Win bwin;
  double* delays;
  struct BNodeTable* bt;
- f* rankfuncs;                // rank->function map
- int* rank_sc_sizes;
  int* rankprocs;              // rank->process map
+ char** rankfuncs;                // rank->function map
 };
 
 /* called by all processes to participate in system profiling.
@@ -39,7 +38,7 @@ struct ProcInfo {
  * select the 'best-connected' node and allocate a frequency table on it, notify every node of the best connected node
  * 
  */
-void profile (int rank, int n);
+void profile (int rank, int n, dampi_func f, int sc_size);
 
 
 

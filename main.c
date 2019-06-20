@@ -17,11 +17,11 @@ int main(int argc, char** argv) {
     printf("proc %d, %s, reporting for duty\n", proc, procname);
     
     
-    DAMPI_Init(proc, n);
+    DAMPI_Start(proc, n, NULL, 3);
     
-//    DAMPI_Send(NULL, 0, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-//    DAMPI_Send(NULL, 0, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-//    
+//  DAMPI_Send(NULL, 0, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+
+    
   
 
     
