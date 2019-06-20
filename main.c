@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include "dampi.h"
 
-
 int main(int argc, char** argv) {
     int n;
     int proc;
@@ -20,11 +19,10 @@ int main(int argc, char** argv) {
     
     DAMPI_Init(proc, n);
     
-    DAMPI_Send(NULL, 0, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-    DAMPI_Send(NULL, 0, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
-    
+//    DAMPI_Send(NULL, 0, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+//    DAMPI_Send(NULL, 0, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+//    
   
-    
 
     
     MPI_Barrier(MPI_COMM_WORLD);

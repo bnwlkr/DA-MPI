@@ -120,13 +120,14 @@ void profile (int proc, int n) {
   for (int i = 0; i < info->n; i++) {
     info->rankprocs[i] = i;
   }
+  info->rank = info->proc;
 }
 
 
 
 void DAMPI_Diag() {
   if (info->proc == info->bnode) {
-    printf("configuration value: %f\n", value(info->bt));
+    printf("configuration value: %f\n", value(info->bt, info->rankprocs));
     printf("n: %d, n_edges: %d, bnode: %d\n", info->n, info->n_edges, info->bnode);
     printf("a: %d, b: %d\n", info->bt->a, info->bt->b);
     for (int i = 0; i < info->n_edges; i++) {

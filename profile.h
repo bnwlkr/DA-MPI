@@ -23,7 +23,7 @@ struct BNodeTable {
 };
 
 struct ProcInfo {
- int proc, n, n_edges, bnode;
+ int proc, rank, n, n_edges, bnode;
  MPI_Win bwin;
  double* delays;
  struct BNodeTable* bt;
