@@ -1,19 +1,15 @@
-//
-//  dampi.h
-//  
-//
-//  Created by Ben Walker on 2019-06-16.
-//
-#ifndef dampi_h
-#define dampi_h
+#ifndef DAMPI_H
+#define DAMPI_H
 
-#include "profile.h"
-#include "send.h"
-#include "migrate.h"
-
-
+#include <mpi.h>
 
 void DAMPI_Init(int proc, int n);
 
+int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
 
-#endif /* dampi_h */
+void DAMPI_Diag();
+
+void DAMPI_Finalize();
+
+
+#endif 

@@ -1,9 +1,7 @@
-#include <mpi.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <setjmp.h>
+#ifndef PROFILE_H
+#define PROFILE_H
 
+#include <mpi.h>
 
 #define TRIALS 100
 #define DATA_SIZE 40
@@ -11,7 +9,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-extern struct ProcInfo info;
+extern struct ProcInfo * info;
 
 enum MType {
     REQUEST,
@@ -20,15 +18,16 @@ enum MType {
 };
 
 struct BNodeTable {
-  int a, b, freqs[];
+  int a, b; // nodes that currently need to be migrated (-1 if none)
+  int freq[]; // comms frequencies
 };
 
 struct ProcInfo {
  int proc, n, n_edges, bnode;
- MPI_Win envwin, bwin;
- char* env;
+ MPI_Win bwin;
  double* delays;
  struct BNodeTable* bt;
+ int rankprocs[];
 };
 
 /* called by all processes to participate in system profiling.
@@ -36,19 +35,20 @@ struct ProcInfo {
  * select the 'best-connected' node and allocate a frequency table on it, notify every node of the best connected node
  * 
  */
-void DAMPI_Profile (int rank, int n);
+void profile (int rank, int n);
 
-/*  free memory and windows
- *
- */
-void DAMPI_Finalize ();
+
 
 /*  get the offset in the edge tables for this edge
  *
  */ 
-int DAMPI_Eoffset (int a, int b);
+int eoffset (int a, int b);
 
-/*  display all DAMPI-relevant information for aiding in diagnosing issues
+
+/*  get the offset in the edge tables for this edge
  *
- */
-void DAMPI_Diag();
+ */ 
+int boffset (int a);
+
+
+#endif

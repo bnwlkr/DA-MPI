@@ -1,13 +1,20 @@
-#include "profile.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-struct ProcInfo info; // global because native to process, not rank (doesn't move in migration)
+
+#include "profile.h"
+#include "migrate.h"
+#include "dampi.h"
+
+struct ProcInfo * info; // global because native to process, not rank (doesn't move in migration)
 
 /* calculate offset of this proc's block in edge (frequency and delay) tables */
-static int boffset (int a) {
-  return (info.n-1)*a - (a-1)*a/2;
+int boffset (int a) {
+  return (info->n-1)*a - (a-1)*a/2;
 }
 
-int DAMPI_Eoffset (int a, int b) {
+int eoffset (int a, int b) {
   int min = MIN(a,b);
   int max = MAX(a,b);
   int boffset_ = boffset(min);
@@ -18,16 +25,16 @@ int DAMPI_Eoffset (int a, int b) {
 static int best () {
   int best = 0;
   double best_delay = 0.0;
-  for (int i = 0; i < info.n; i++) {
+  for (int i = 0; i < info->n; i++) {
     double delay = 0.0;
     int offset_ = boffset(i);
-    int n_read = info.n-i-1;
+    int n_read = info->n-i-1;
     for (int j = offset_; j < offset_ + n_read; j++) {
-      delay += info.delays[j];
+      delay += info->delays[j];
     }
     for (int j = 0; j < i; j++) {
       int offset_ = boffset(j);
-      delay += info.delays[offset_+i-j-1];
+      delay += info->delays[offset_+i-j-1];
     }
     if (delay < best_delay || best_delay == 0.0) {
       best_delay = delay;
@@ -56,31 +63,33 @@ static void respond (char* data) {
 
 /* measure latencies with other procs */
 static void measure (char* data) {
-  int offset_ = boffset(info.proc);
-  for (int i = info.proc+1; i < info.n; i++) {
+  int offset_ = boffset(info->proc);
+  for (int i = info->proc+1; i < info->n; i++) {
     double t0 = MPI_Wtime();
     for (int j = 0; j < TRIALS; j++) {
       MPI_Ssend(data, DATA_SIZE, MPI_BYTE, i, REQUEST, MPI_COMM_WORLD);
       MPI_Recv(data, DATA_SIZE, MPI_BYTE, i, RESPONSE, MPI_COMM_WORLD, NULL);
     }
     double t1 = MPI_Wtime();
-    info.delays[offset_ + i-(info.proc+1)] = t1-t0;
+    info->delays[offset_ + i-(info->proc+1)] = t1-t0;
   }
 }
 
 
 void DAMPI_Finalize () {
-  free(info.delays);
-  MPI_Win_free(&info.bwin);
+  free(info->delays);
+  MPI_Win_free(&info->bwin);
+  free(info);
 }
 
-void DAMPI_Profile (int proc, int n) {
-  info.proc = proc;
-  info.n = n;
-  info.n_edges = n*(n-1)/2;
-  info.delays = calloc(info.n_edges, sizeof(double));
+void profile (int proc, int n) {
+  info = malloc(sizeof(struct ProcInfo) + n*sizeof(int));
+  info->proc = proc;
+  info->n = n;
+  info->n_edges = n*(n-1)/2;
+  info->delays = calloc(info->n_edges, sizeof(double));
   MPI_Win win;
-  MPI_Win_create(info.delays, info.n_edges*sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+  MPI_Win_create(info->delays, info->n_edges*sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
   char data[DATA_SIZE];
   switch (proc) {
     case 0:
@@ -99,29 +108,36 @@ void DAMPI_Profile (int proc, int n) {
     if (i != proc) {
      int n_read = n-i-1;
      int offset_= boffset(i);
-     MPI_Get(&info.delays[offset_], n_read, MPI_DOUBLE, i, offset_, n_read, MPI_DOUBLE, win);
+     MPI_Get(&info->delays[offset_], n_read, MPI_DOUBLE, i, offset_, n_read, MPI_DOUBLE, win);
     }
   }
-  
   MPI_Win_fence(0, win);
   MPI_Win_free(&win);
 
-  info.bnode = best();  
-  MPI_Win_allocate(proc == info.bnode ? sizeof(struct BNodeTable) + info.n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info.bt, &info.bwin);
-  memset(info.bt->freqs, 0, info.proc == info.bnode ? info.n_edges*sizeof(int) : 0);
-  
+  info->bnode = best();  
+  MPI_Win_allocate(proc == info->bnode ? sizeof(struct BNodeTable) + info->n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
+  memset(info->bt->freq, 0, info->proc == info->bnode ? info->n_edges*sizeof(int) : 0);
+  for (int i = 0; i < info->n; i++) {
+    info->rankprocs[i] = i;
+  }
 }
 
+
+
 void DAMPI_Diag() {
-  if (info.proc == info.bnode) {
-    printf("n: %d, n_edges: %d, bnode: %d\n", info.n, info.n_edges, info.bnode);
-    printf("a: %d, b: %d\n", info.bt->a, info.bt->b);
-    for (int i = 0; i < info.n_edges; i++) {
-      
-      printf("freq[%d] = %d\n", i, info.bt->freqs[i]);
+  if (info->proc == info->bnode) {
+    printf("configuration value: %f\n", value(info->bt));
+    printf("n: %d, n_edges: %d, bnode: %d\n", info->n, info->n_edges, info->bnode);
+    printf("a: %d, b: %d\n", info->bt->a, info->bt->b);
+    for (int i = 0; i < info->n_edges; i++) {
+      printf ("delays[%d] = %f\n", i, info->delays[i]);
     }
-    for (int i = 0; i < info.n_edges; i++) {
-      printf ("delays[%d] = %f\n", i, info.delays[i]);
+    for (int i = 0; i < info->n_edges; i++) {
+      printf("freq[%d] = %d\n", i, info->bt->freq[i]);
     }
+    for (int i = 0; i < info->n; i++) {
+      printf("[%d]\n", info->rankprocs[i]);
+    }
+    
   }
 }
