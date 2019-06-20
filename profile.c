@@ -83,7 +83,9 @@ void DAMPI_Finalize () {
 }
 
 void profile (int proc, int n) {
-  info = malloc(sizeof(struct ProcInfo) + n*sizeof(int));
+  info = malloc(sizeof(struct ProcInfo));
+  //info->rankfuncs = malloc();
+  info->rankprocs = malloc(sizeof(int)*n);
   info->proc = proc;
   info->n = n;
   info->n_edges = n*(n-1)/2;

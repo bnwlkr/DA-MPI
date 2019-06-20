@@ -11,6 +11,8 @@
 
 extern struct ProcInfo * info;
 
+typedef void(*f)(void* x);
+
 enum MType {
     REQUEST,
     RESPONSE,
@@ -18,8 +20,8 @@ enum MType {
 };
 
 struct BNodeTable {
-  int a, b; // nodes that currently need to be migrated (-1 if none)
-  int freq[]; // comms frequencies
+  int a, b;             // nodes that currently need to be migrated (-1 if none)
+  int freq[];           // comms frequencies
 };
 
 struct ProcInfo {
@@ -27,7 +29,9 @@ struct ProcInfo {
  MPI_Win bwin;
  double* delays;
  struct BNodeTable* bt;
- int rankprocs[];
+ f* rankfuncs;                // rank->function map
+ int* rank_sc_sizes;
+ int* rankprocs;              // rank->process map
 };
 
 /* called by all processes to participate in system profiling.

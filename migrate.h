@@ -5,10 +5,6 @@
 
 #define SWAP_THRESHOLD 10
 
-struct DAMPI_Suitcase {
-  int size;
-  void * data;
-};
 
 
 /*  processes regularly enter this function to see if a migration is necessary. If they decide that they should move to another proc, 
