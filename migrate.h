@@ -6,18 +6,6 @@
 #define SWAP_THRESHOLD 10
 
 
-
-/*  processes regularly enter this function to see if a migration is necessary. If they decide that they should move to another proc, 
- *  they will post that information at the bnode and wait for synchronization.
- *
- */
-int airlock();
-
-/*  get the bnode's table of migration and frequency information 
- */
-
-void get_bt(struct BNodeTable * bt);
-
 /*  compute the value of the configuration represented by this table
  *
  */

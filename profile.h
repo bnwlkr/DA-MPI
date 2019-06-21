@@ -20,8 +20,8 @@ enum MType {
 };
 
 struct BNodeTable {
-  int a, b;             // nodes that currently need to be migrated (-1 if none)
-  int freq[];           // comms frequencies
+  int a, b, checkin;              // nodes that currently need to be migrated (-1 if none)
+  int freq[];                     // comms frequencies
 };
 
 struct ProcInfo {
@@ -29,8 +29,9 @@ struct ProcInfo {
  MPI_Win bwin;
  double* delays;
  struct BNodeTable* bt;
- int* rankprocs;              // rank->process map
- char** rankfuncs;                // rank->function map
+ int* rankprocs;                  // rank->process map
+ dampi_func* rankfuncs;           // rank->func map
+ int* rank_sc_sizes;              // rank->suitcase size map
 };
 
 /* called by all processes to participate in system profiling.

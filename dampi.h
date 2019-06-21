@@ -5,11 +5,21 @@
 
 typedef void(*dampi_func)(void*);
 
-void DAMPI_Start(int proc, int n, dampi_func f, int sc_size);
+/*  Register which functions DAMPI will migrate between
+ *  nf: number of functions to register
+ */ 
+void DAMPI_Reg(int nf, ...);
+
+/*  Profile MPI system and start this rank running f
+ *  sc_size: size of data argument to this rank's function
+ */
+void DAMPI_Start(int proc, int n, dampi_func f, int sc_size, void* suitcase);
 
 int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
 
 void DAMPI_Diag();
+
+void DAMPI_Airlock();
 
 void DAMPI_Finalize();
 
