@@ -22,6 +22,7 @@ void DAMPI_Reg(int nf, ...) {
 
 void DAMPI_Start(int proc, int n, dampi_func f, int sc_size, void* suitcase) {
   profile(proc, n, f, sc_size);
+  info->suitcase = suitcase;
   int myfunc;
   for (int i = 0; i < n_funcs; i++) {
     if (funcs[i] == f) {

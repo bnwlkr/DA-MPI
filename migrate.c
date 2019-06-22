@@ -1,7 +1,7 @@
 #include "migrate.h"
 #include <string.h>
 #include <stdio.h>
-
+#include <stdlib.h>
 
 
 static void get_bt (struct BNodeTable* bt) {
@@ -31,7 +31,6 @@ int should_migrate (struct BNodeTable* bt) {
     }
   }
   if (highest_val - current_val > SWAP_THRESHOLD) {
-    printf("%d should swap with %d. value difference: %f\n", info->rank, highest_swap, highest_val - current_val);
     return highest_swap;
   }
   return -1;
@@ -54,41 +53,59 @@ double value (struct BNodeTable* bt, int* rankprocs) {
 }
 
 
+static void swap_rankproc_info () {
+  int temp = info->rankprocs[info->bt->a];
+  info->rankprocs[info->bt->a] = info->rankprocs[info->bt->b];
+  info->rankprocs[info->bt->b] = temp;
+}
+
+static void swap_cases(int a, int b) {
+//  int a_size = info->rank_sc_sizes[info->bt->a];
+//  int b_size = info->rank_sc_sizes[info->bt->b];
+//  int read = info->rank==info->bt->a ? b_size : a_size;
+//  int other = info->rank==info->bt->a ? info->bt->b : info->bt->a;
+//  void* temp = malloc(read);
+//  MPI_Win_lock(MPI_LOCK_SHARED, other, 0, exwin);
+//  printf("%d attemtping to swap case with %d\n", info->rank, other);
+//  MPI_Get(temp, read, MPI_BYTE, other, 0, read, MPI_BYTE, exwin);
+//  printf("MPI GOT\n");
+//  MPI_Win_unlock(other, exwin);
+//  free(info->suitcase);
+//  info->suitcase = malloc(read);
+//  memcpy(info->suitcase, temp, read);
+}
+
+
 void DAMPI_Airlock () {
-  printf("rank %d has entered the airlock\n", info->rank);
-  struct BNodeTable bt;
   MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->bwin);
-  get_bt(&bt);
-  if (bt.a == -1) {
-    bt.b = should_migrate(&bt);
-    if (bt.b != -1) {
-      printf ("rank %d wants to swap with %d\n", info->rank, bt.b);
-      bt.a = info->rank;
-      MPI_Put(&bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+  get_bt(info->bt);
+  if (info->bt->a == -1) {
+    info->bt->b = should_migrate(info->bt);
+    if (info->bt->b != -1) {
+      printf ("SWAP REQUEST: %d <--> %d\n", info->rank, info->bt->b);
+      info->bt->a = info->rank;
+      MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
       goto migration;
     } else {
       MPI_Win_unlock(info->bnode, info->bwin);
     }
   } else {
-    migration: 
-    if (bt.checkin == info->n-1) {
-      bt.a = bt.b = -1;
-      bt.checkin = 0;
-      MPI_Put(&bt, sizeof(struct BNodeTable)/sizeof(int), MPI_INT, info->bnode, 0, sizeof(struct BNodeTable)/sizeof(int), MPI_INT, info->bwin);
-    } else {
-      int one = 1;
-      MPI_Accumulate(&one, 1, MPI_INT, info->bnode, 2, 1, MPI_INT, MPI_SUM, info->bwin);
-    }
+    migration:
     MPI_Win_unlock(info->bnode, info->bwin);
-    int temp = info->rankprocs[bt.a];
-    info->rankprocs[bt.a] = info->rankprocs[bt.b];
-    info->rankprocs[bt.b] = temp;
-    // SUITCASE EXCHANGE
+    swap_rankproc_info();
+    int a = info->bt->a;
+    int b = info->bt->b;
+    int part = info->rank == a || info->rank == b;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->bwin);
+    info->bt->a = info->bt->b = -1;
+    MPI_Win_unlock(info->bnode, info->bwin);
+    if (part) {
+      printf("SWAP: %d <--> %d\n", info->rank, info->rank == a ? b : a);
+      info->rank = b;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
   }
-  
-  
-  
-  printf("rank %d has left the airlock\n", info->rank);
 }
 
 

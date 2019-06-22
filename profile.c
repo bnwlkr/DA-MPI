@@ -101,6 +101,7 @@ void profile (int proc, int n, dampi_func f, int sc_size) {
   info->n = n;
   info->n_edges = n*(n-1)/2;
   info->delays = calloc(info->n_edges, sizeof(double));
+  info->suitcase = malloc(sc_size);
   MPI_Win delay_win;
   MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);
   char data[DATA_SIZE];
@@ -118,17 +119,13 @@ void profile (int proc, int n, dampi_func f, int sc_size) {
   }
   sync_delays(&delay_win);
   info->bnode = best();  
-  MPI_Win_allocate(proc == info->bnode ? sizeof(struct BNodeTable) + info->n_edges*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
-  if (proc == info->bnode) {
-    info->bt->a = -1;
-    info->bt->b = -1;
-    info->bt->checkin = 0;
-  }
-  memset(info->bt->freq, 0, proc == info->bnode ? info->n_edges*sizeof(int) : 0);
+  MPI_Win_allocate(sizeof(struct BNodeTable) + info->n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
+  memset(info->bt->freq, 0, info->n_edges*sizeof(int));
+  info->bt->a = info->bt->b = -1;
   for (int i = 0; i < info->n; i++) {
     info->rankprocs[i] = i;
   }
-
+  MPI_Win_create(info->suitcase, sc_size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &info->swapwin);
 }
 
 

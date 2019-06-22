@@ -10,5 +10,6 @@ int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int 
     MPI_Accumulate(&inc, 1, MPI_INT, info->bnode, eoffset(dest, info->proc) + sizeof(struct BNodeTable)/sizeof(int) , 1, MPI_INT, MPI_SUM, info->bwin);
     MPI_Win_unlock(info->bnode, info->bwin);
   }
-  return MPI_Send(buf, count, datatype, dest, tag, comm);
+  return 1;
+  //return MPI_Send(buf, count, datatype, dest, tag, comm);
 }
