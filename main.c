@@ -15,6 +15,7 @@ void bar (void* arg) {
     sleep(1);
     DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
     DAMPI_Airlock();
+    DAMPI_Diag();
   }
   
 }
@@ -24,6 +25,7 @@ void foo (void* arg) {
     sleep(1);
     DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
     DAMPI_Airlock();
+    DAMPI_Diag();
   }
 
 }

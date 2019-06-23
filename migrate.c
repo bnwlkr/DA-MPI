@@ -6,7 +6,7 @@
 
 static void get_bt (struct BNodeTable* bt) {
   MPI_Get(bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
-  //MPI_Get(bt->freq, info->n_edges, MPI_INT, info->bnode, 0, info->n_edges, MPI_INT, info->freqwin);
+  MPI_Get(bt->freq, info->n_edges, MPI_INT, info->bnode, 0, info->n_edges, MPI_INT, info->freqwin);
 }
 
 
@@ -34,7 +34,7 @@ int should_migrate (struct BNodeTable* bt) {
     int temp = rankprocs[highest_swap];
     rankprocs[highest_swap] = info->proc;
     rankprocs[info->rank] = temp;
-//    printf("current_val : %f, highest_val: %f\n", current_val, highest_val);
+    printf("value difference: %f\n", highest_val-current_val);
     return highest_swap;
   }
   return -1;
@@ -63,7 +63,7 @@ static void swap_rankproc_info () {
   info->rankprocs[info->bt->b] = temp;
 }
 
-static void swap_cases(int a, int b) {
+static void swap(int a, int b) {
   char dummy;
   int other_rank = info->rank==a ? b : a;
   int other_proc = info->rankprocs[other_rank];
@@ -74,20 +74,21 @@ static void swap_cases(int a, int b) {
   MPI_Sendrecv(&dummy, 1, MPI_BYTE, other_proc, 0, &dummy, 1, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, NULL);
   memcpy(info->suitcase, temp, info->sc_size);
   printf("SWAP %d <--> %d\n", info->rank, other_rank);
+  info->rank = other_rank;
 }
 
-static void lockbn () {
+static void LOCKBN () {
   MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->bwin);
   MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->freqwin);
 }
 
-static void unlockbn () {
+static void UNLOCKBN () {
   MPI_Win_unlock(info->bnode, info->freqwin);
   MPI_Win_unlock(info->bnode, info->bwin);
 }
 
 void DAMPI_Airlock () {
-  lockbn();
+  LOCKBN();
   get_bt(info->bt);
   if (info->bt->a == -1) {
     info->bt->b = should_migrate(info->bt);
@@ -97,18 +98,15 @@ void DAMPI_Airlock () {
       MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
       goto migration;
     } else {
-      unlockbn();
+      UNLOCKBN();
     }
   } else {
-    migration:
-    unlockbn();
+    migration: UNLOCKBN();
     int a = info->bt->a;
     int b = info->bt->b;
     int part = info->rank == a || info->rank == b;
     if (part) {
-      printf("REPORT FOR SWAP: %d\n", info->rank);
-      swap_cases(a,b);
-      info->rank = info->rank == a ? b : a;
+      swap(a,b);
     }
     swap_rankproc_info();
     MPI_Win_fence(0, info->bwin);
