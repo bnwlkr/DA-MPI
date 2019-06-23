@@ -77,8 +77,10 @@ static void measure (char* data) {
 
 
 void DAMPI_Finalize () {
-  free(info->delays);
   MPI_Win_free(&info->bwin);
+  MPI_Win_free(&info->scwin);
+  MPI_Win_free(&info->freqwin);
+  free(info->delays);
   free(info);
 }
 
@@ -119,13 +121,15 @@ void profile (int proc, int n, dampi_func f, int sc_size) {
   }
   sync_delays(&delay_win);
   info->bnode = best();  
-  MPI_Win_allocate(sizeof(struct BNodeTable) + info->n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
+  int ambnode = info->proc==info->bnode;
+  MPI_Win_allocate(sizeof(struct BNodeTable), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
+  MPI_Win_allocate(info->n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt->freq, &info->freqwin);
   memset(info->bt->freq, 0, info->n_edges*sizeof(int));
   info->bt->a = info->bt->b = -1;
   for (int i = 0; i < info->n; i++) {
     info->rankprocs[i] = i;
   }
-  MPI_Win_create(info->suitcase, sc_size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &info->swapwin);
+  MPI_Win_create(info->suitcase, sc_size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &info->scwin);
 }
 
 

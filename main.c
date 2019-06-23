@@ -4,17 +4,22 @@
 #include <unistd.h>
 #include "dampi.h"
 
-int proc;
+int proc_;
 
 void bar (void* arg) {
+  if (proc_==1) sleep(2);
   DAMPI_Send(NULL, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-  DAMPI_Airlock();
-  DAMPI_Airlock();
+  while (1) {
+    DAMPI_Airlock();
+  }
+  
 }
 
 void foo (void* arg) {
-  DAMPI_Airlock();
-  DAMPI_Airlock();
+  while (1) {
+    DAMPI_Airlock();
+  }
+
 }
 
 int main(int argc, char** argv) {
@@ -26,7 +31,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &n);
     MPI_Comm_rank(MPI_COMM_WORLD, &proc);
     MPI_Get_processor_name(procname, &len);
-    proc=proc;
+    proc_=proc;
     //printf("proc %d, %s, reporting for duty\n", proc, procname);
     
     DAMPI_Reg(2, foo, bar);
@@ -34,11 +39,9 @@ int main(int argc, char** argv) {
       DAMPI_Start(proc, n, foo, 100, NULL);
     else
       DAMPI_Start(proc, n, bar, 30, NULL);
-  
+
 
     
-  
-
     
     MPI_Barrier(MPI_COMM_WORLD);
   

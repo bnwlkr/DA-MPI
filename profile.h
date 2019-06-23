@@ -21,12 +21,12 @@ enum MType {
 
 struct BNodeTable {
   int a, b;              // nodes that currently need to be migrated (-1 if none)
-  int freq[];                     // comms frequencies
+  int * freq;            // comms frequencies
 };
 
 struct ProcInfo {
  int proc, rank, n, n_edges, bnode;
- MPI_Win bwin, swapwin;
+ MPI_Win bwin, freqwin, scwin;
  double* delays;
  struct BNodeTable* bt;
  int* rankprocs;                  // rank->process map

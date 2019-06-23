@@ -5,8 +5,8 @@
 
 
 static void get_bt (struct BNodeTable* bt) {
-  int read = sizeof(struct BNodeTable)/sizeof(int) + info->n_edges;
-  MPI_Get(bt, read, MPI_INT, info->bnode, 0, read, MPI_INT, info->bwin);
+  MPI_Get(bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+  //MPI_Get(bt->freq, info->n_edges, MPI_INT, info->bnode, 0, info->n_edges, MPI_INT, info->freqwin);
 }
 
 
@@ -31,6 +31,10 @@ int should_migrate (struct BNodeTable* bt) {
     }
   }
   if (highest_val - current_val > SWAP_THRESHOLD) {
+    int temp = rankprocs[highest_swap];
+    rankprocs[highest_swap] = info->proc;
+    rankprocs[info->rank] = temp;
+    printf("current_val : %f, highest_val: %f\n", current_val, highest_val);
     return highest_swap;
   }
   return -1;
@@ -60,51 +64,59 @@ static void swap_rankproc_info () {
 }
 
 static void swap_cases(int a, int b) {
-//  int a_size = info->rank_sc_sizes[info->bt->a];
-//  int b_size = info->rank_sc_sizes[info->bt->b];
-//  int read = info->rank==info->bt->a ? b_size : a_size;
-//  int other = info->rank==info->bt->a ? info->bt->b : info->bt->a;
-//  void* temp = malloc(read);
-//  MPI_Win_lock(MPI_LOCK_SHARED, other, 0, exwin);
-//  printf("%d attemtping to swap case with %d\n", info->rank, other);
-//  MPI_Get(temp, read, MPI_BYTE, other, 0, read, MPI_BYTE, exwin);
-//  printf("MPI GOT\n");
-//  MPI_Win_unlock(other, exwin);
-//  free(info->suitcase);
-//  info->suitcase = malloc(read);
-//  memcpy(info->suitcase, temp, read);
+  char dummy;
+  int a_size = info->rank_sc_sizes[a];
+  int b_size = info->rank_sc_sizes[b];
+  int read = info->rank==a ? b_size : a_size;
+  int other = info->rank==a ? b : a;
+  void* temp = malloc(read);
+  MPI_Win_lock(MPI_LOCK_SHARED, other, 0, info->scwin);
+  MPI_Get(temp, read, MPI_BYTE, other, 0, read, MPI_BYTE, info->scwin);
+  MPI_Win_unlock(other, info->scwin);
+  MPI_Sendrecv(&dummy, 1, MPI_BYTE, other, 0, &dummy, 1, MPI_BYTE, other, 0, MPI_COMM_WORLD, NULL);
+  free(info->suitcase);
+  info->suitcase = malloc(read);
+  memcpy(info->suitcase, temp, read);
+  printf("SWAP %d <--> %d\n", info->rank, other);
 }
 
+static void lockbn () {
+  MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->bwin);
+  MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->freqwin);
+}
+
+static void unlockbn () {
+  MPI_Win_unlock(info->bnode, info->freqwin);
+  MPI_Win_unlock(info->bnode, info->bwin);
+}
 
 void DAMPI_Airlock () {
-  MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->bwin);
+  lockbn();
   get_bt(info->bt);
   if (info->bt->a == -1) {
     info->bt->b = should_migrate(info->bt);
     if (info->bt->b != -1) {
+      printf("freq[0] = %d, freq[1] = %d, freq[2] = %d, freq[3] = %d, freq[4] = %d, freq[5] = %d\n", info->bt->freq[0], info->bt->freq[1], info->bt->freq[2], info->bt->freq[3], info->bt->freq[4], info->bt->freq[5]);
       printf ("SWAP REQUEST: %d <--> %d\n", info->rank, info->bt->b);
       info->bt->a = info->rank;
       MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
       goto migration;
     } else {
-      MPI_Win_unlock(info->bnode, info->bwin);
+      unlockbn();
     }
   } else {
     migration:
-    MPI_Win_unlock(info->bnode, info->bwin);
+    unlockbn();
     swap_rankproc_info();
+    MPI_Barrier(MPI_COMM_WORLD);
     int a = info->bt->a;
     int b = info->bt->b;
     int part = info->rank == a || info->rank == b;
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->bwin);
-    info->bt->a = info->bt->b = -1;
-    MPI_Win_unlock(info->bnode, info->bwin);
     if (part) {
-      printf("SWAP: %d <--> %d\n", info->rank, info->rank == a ? b : a);
-      info->rank = b;
+      swap_cases(a,b);
+      info->rank = info->rank == a ? b : a;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    info->bt->b = info->bt->a = -1;
   }
 }
 
