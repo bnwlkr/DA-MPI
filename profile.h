@@ -25,13 +25,12 @@ struct BNodeTable {
 };
 
 struct ProcInfo {
- int proc, rank, n, n_edges, bnode;
+ int proc, rank, n, n_edges, bnode, sc_size;
  MPI_Win bwin, freqwin, scwin;
  double* delays;
  struct BNodeTable* bt;
  int* rankprocs;                  // rank->process map
  dampi_func* rankfuncs;           // rank->func map
- int* rank_sc_sizes;              // rank->suitcase size map
  void* suitcase;
 };
 
@@ -40,7 +39,7 @@ struct ProcInfo {
  * select the 'best-connected' node and allocate a frequency table on it, notify every node of the best connected node
  * 
  */
-void profile (int rank, int n, dampi_func f, int sc_size);
+void profile (int rank, int n);
 
 
 

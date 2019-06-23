@@ -3,13 +3,17 @@
 #include <mpi.h>
 #include <unistd.h>
 #include "dampi.h"
+#include <time.h>
+#include <stdlib.h>
+
 
 int proc_;
+int n_;
 
 void bar (void* arg) {
-  if (proc_==1) sleep(2);
-  DAMPI_Send(NULL, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
   while (1) {
+    sleep(1);
+    DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
     DAMPI_Airlock();
   }
   
@@ -17,6 +21,8 @@ void bar (void* arg) {
 
 void foo (void* arg) {
   while (1) {
+    sleep(1);
+    DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
     DAMPI_Airlock();
   }
 
@@ -32,7 +38,10 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &proc);
     MPI_Get_processor_name(procname, &len);
     proc_=proc;
+    n_=n;
     //printf("proc %d, %s, reporting for duty\n", proc, procname);
+    
+    srand(time(NULL));
     
     DAMPI_Reg(2, foo, bar);
     if (!proc)

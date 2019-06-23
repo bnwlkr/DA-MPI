@@ -93,9 +93,9 @@ static void sync_delays (MPI_Win* delay_win) {
   MPI_Win_fence(0, *delay_win);
 }
 
-void profile (int proc, int n, dampi_func f, int sc_size) {
+
+void profile (int proc, int n) {
   info = malloc(sizeof(struct ProcInfo));
-  info->rank_sc_sizes = malloc(sizeof(int)*n);
   info->rankprocs = malloc(sizeof(int)*n);
   info->rankfuncs = malloc(sizeof(dampi_func)*n);
   info->proc = proc;
@@ -103,7 +103,6 @@ void profile (int proc, int n, dampi_func f, int sc_size) {
   info->n = n;
   info->n_edges = n*(n-1)/2;
   info->delays = calloc(info->n_edges, sizeof(double));
-  info->suitcase = malloc(sc_size);
   MPI_Win delay_win;
   MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);
   char data[DATA_SIZE];
@@ -121,7 +120,6 @@ void profile (int proc, int n, dampi_func f, int sc_size) {
   }
   sync_delays(&delay_win);
   info->bnode = best();  
-  int ambnode = info->proc==info->bnode;
   MPI_Win_allocate(sizeof(struct BNodeTable), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
   MPI_Win_allocate(info->n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt->freq, &info->freqwin);
   memset(info->bt->freq, 0, info->n_edges*sizeof(int));
@@ -129,13 +127,13 @@ void profile (int proc, int n, dampi_func f, int sc_size) {
   for (int i = 0; i < info->n; i++) {
     info->rankprocs[i] = i;
   }
-  MPI_Win_create(info->suitcase, sc_size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &info->scwin);
 }
 
 
 void DAMPI_Diag() {
   if (info->proc == info->bnode) {
     printf("cvalue: %f\n", value(info->bt, info->rankprocs));
+    printf("suitcase size: %d\n", info->sc_size);
     printf("n: %d, n_edges: %d, bnode: %d\n", info->n, info->n_edges, info->bnode);
     printf("a: %d, b: %d\n", info->bt->a, info->bt->b);
     for (int i = 0; i < info->n_edges; i++) {
@@ -145,7 +143,7 @@ void DAMPI_Diag() {
       printf("freq[%d] = %d\n", i, info->bt->freq[i]);
     }
     for (int i = 0; i < info->n; i++) {
-      printf("%d : [proc: %d, sc_size: %d, func: %p]\n", i, info->rankprocs[i], info->rank_sc_sizes[i], (void*)info->rankfuncs[i]);
+      printf("%d : [proc: %d, func: %p]\n", i, info->rankprocs[i], (void*)info->rankfuncs[i]);
     }
   }
 }

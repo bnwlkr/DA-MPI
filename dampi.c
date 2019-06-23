@@ -21,7 +21,7 @@ void DAMPI_Reg(int nf, ...) {
 
 
 void DAMPI_Start(int proc, int n, dampi_func f, int sc_size, void* suitcase) {
-  profile(proc, n, f, sc_size);
+  profile(proc, n);
   info->suitcase = suitcase;
   int myfunc;
   for (int i = 0; i < n_funcs; i++) {
@@ -38,11 +38,15 @@ void DAMPI_Start(int proc, int n, dampi_func f, int sc_size, void* suitcase) {
   MPI_Win_fence(0, win);
   MPI_Win_fence(MPI_MODE_NOPUT, win);
   MPI_Get(&rank_nums, n, MPI_INT, info->bnode, 0, n, MPI_INT, win);
-  MPI_Get(info->rank_sc_sizes, n, MPI_INT, info->bnode, n, n, MPI_INT, win);
+  MPI_Get(&rank_nums[n], n, MPI_INT, info->bnode, n, n, MPI_INT, win);
   MPI_Win_fence(0, win);
+  int max_size = 0;
   for (int i = 0; i < n; i++) {
+    if (rank_nums[n+i] > max_size) max_size = rank_nums[n+i];
     info->rankfuncs[i] = funcs[rank_nums[i]];
   }
+  info->sc_size = max_size;
+  MPI_Win_allocate(info->sc_size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &info->suitcase, &info->scwin);
   f(suitcase);
 }
 
