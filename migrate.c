@@ -31,10 +31,7 @@ int should_migrate (struct BNodeTable* bt) {
     }
   }
   if (highest_val - current_val > SWAP_THRESHOLD) {
-    int temp = rankprocs[highest_swap];
-    rankprocs[highest_swap] = info->proc;
-    rankprocs[info->rank] = temp;
-    printf("value difference: %f\n", highest_val-current_val);
+    printf("%f\n", highest_val-current_val);
     return highest_swap;
   }
   return -1;
@@ -68,11 +65,9 @@ static void swap(int a, int b) {
   int other_rank = info->rank==a ? b : a;
   int other_proc = info->rankprocs[other_rank];
   void* temp = malloc(info->sc_size);
-  MPI_Win_lock(MPI_LOCK_SHARED, other_proc, 0, info->scwin);
-  MPI_Get(temp, info->sc_size, MPI_BYTE, other_proc, 0, info->sc_size, MPI_BYTE, info->scwin);
-  MPI_Win_unlock(other_proc, info->scwin);
-  MPI_Sendrecv(&dummy, 1, MPI_BYTE, other_proc, 0, &dummy, 1, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, NULL);
+  MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, NULL);
   memcpy(info->suitcase, temp, info->sc_size);
+  free(temp);
   printf("SWAP %d <--> %d\n", info->rank, other_rank);
   info->rank = other_rank;
 }
@@ -88,6 +83,7 @@ static void UNLOCKBN () {
 }
 
 void DAMPI_Airlock () {
+  DAMPI_Diag();
   LOCKBN();
   get_bt(info->bt);
   if (info->bt->a == -1) {

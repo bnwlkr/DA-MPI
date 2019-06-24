@@ -15,7 +15,6 @@ void bar (void* arg) {
     sleep(1);
     DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
     DAMPI_Airlock();
-    DAMPI_Diag();
   }
   
 }
@@ -25,7 +24,6 @@ void foo (void* arg) {
     sleep(1);
     DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
     DAMPI_Airlock();
-    DAMPI_Diag();
   }
 
 }
@@ -45,12 +43,29 @@ int main(int argc, char** argv) {
     
     srand(time(NULL));
     
-    DAMPI_Reg(2, foo, bar);
-    if (!proc)
-      DAMPI_Start(proc, n, foo, 100, NULL);
-    else
-      DAMPI_Start(proc, n, bar, 30, NULL);
-
+    
+    struct FooCase {
+      int a, b;
+    };
+    
+    struct BarCase {
+      int a,b,c;
+    };
+    
+  
+    
+    DAMPI_Register(proc, n, 2, foo, bar);
+    if (!proc) {
+      struct FooCase *fc = malloc(sizeof(struct FooCase));
+      fc->a = 3;
+      fc->b = 4;
+      DAMPI_Start(foo, sizeof(struct FooCase), fc);
+      free(fc);
+    } else {
+      struct BarCase *bc = malloc(sizeof(struct BarCase));
+      bc->a = bc->b = bc->c = 10;
+      DAMPI_Start(bar, sizeof(struct BarCase), bc);
+    }
 
     
     
