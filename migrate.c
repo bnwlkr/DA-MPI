@@ -37,7 +37,6 @@ int should_migrate (struct BNodeTable* bt) {
   return -1;
 }
 
-
 double value (struct BNodeTable* bt, int* rankprocs) {
   double sum = 0.0;
   for (int i = 0; i < info->n-1; i++) {
@@ -82,8 +81,7 @@ static void UNLOCKBN () {
   MPI_Win_unlock(info->bnode, info->bwin);
 }
 
-void DAMPI_Airlock () {
-  DAMPI_Diag();
+int DAMPI_Airlock () {
   LOCKBN();
   get_bt(info->bt);
   if (info->bt->a == -1) {
@@ -109,7 +107,12 @@ void DAMPI_Airlock () {
     info->bt->a = info->bt->b = -1;
     MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
     MPI_Win_fence(0, info->bwin);
+    if (part) {
+      info->rankfuncs[info->rank](info->suitcase);
+      return 1; 
+    }
   }
+  return 0;
 }
 
 

@@ -19,7 +19,7 @@ int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int 
 
 void DAMPI_Diag();
 
-void DAMPI_Airlock();
+int DAMPI_Airlock();
 
 void DAMPI_Finalize();
 

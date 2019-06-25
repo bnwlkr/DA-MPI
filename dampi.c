@@ -29,7 +29,7 @@ void DAMPI_Start(dampi_func f, int sc_size, void* suitcase) {
       myfunc = i;
     }
   }
-  int rank_nums[info->proc == info->bnode ? n*2 : 0];
+  int rank_nums[n*2];
   MPI_Win win;
   MPI_Win_create(rank_nums, info->proc==info->bnode ? 2*n*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
   MPI_Win_fence(0, win);
@@ -37,8 +37,7 @@ void DAMPI_Start(dampi_func f, int sc_size, void* suitcase) {
   MPI_Put(&sc_size, 1, MPI_INT, info->bnode, info->rank+n, 1, MPI_INT, win);
   MPI_Win_fence(0, win);
   MPI_Win_fence(MPI_MODE_NOPUT, win);
-  MPI_Get(&rank_nums, n, MPI_INT, info->bnode, 0, n, MPI_INT, win);
-  MPI_Get(&rank_nums[n], n, MPI_INT, info->bnode, n, n, MPI_INT, win);
+  MPI_Get(rank_nums, n*2, MPI_INT, info->bnode, 0, n*2, MPI_INT, win);
   MPI_Win_fence(0, win);
   int max_size = 0;
   for (int i = 0; i < n; i++) {

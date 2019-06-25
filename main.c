@@ -10,20 +10,33 @@
 int proc_;
 int n_;
 
-void bar (void* arg) {
+void zero (void* arg) {
   while (1) {
-    sleep(1);
-    DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
-    DAMPI_Airlock();
+    DAMPI_Diag();
+//    printf("ZERO: %d\n", proc_);
+    //sleep(rand()%5);
+    DAMPI_Send(NULL, 1, MPI_INT, 2, 0, MPI_COMM_WORLD);
+    if (DAMPI_Airlock()) return;
   }
-  
 }
 
-void foo (void* arg) {
+void one (void* arg) {
   while (1) {
-    sleep(1);
-    DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
-    DAMPI_Airlock();
+    DAMPI_Diag();
+//    printf("ONE: %d\n", proc_);
+    //sleep(rand()%5);
+    DAMPI_Send(NULL, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+    if (DAMPI_Airlock()) return;
+  }
+}
+
+void two (void* arg) {
+  while (1) {
+    DAMPI_Diag();
+//    printf("TWO: %d\n", proc_);
+    //sleep(rand()%5);
+    DAMPI_Send(NULL, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+    if (DAMPI_Airlock()) return;
   }
 
 }
@@ -39,32 +52,46 @@ int main(int argc, char** argv) {
     MPI_Get_processor_name(procname, &len);
     proc_=proc;
     n_=n;
-    //printf("proc %d, %s, reporting for duty\n", proc, procname);
+    printf("proc %d, %s, reporting for duty\n", proc, procname);
     
     srand(time(NULL));
     
     
-    struct FooCase {
-      int a, b;
+    struct ZeroCase {
+      int a,b;
     };
     
-    struct BarCase {
+    struct TwoCase {
       int a,b,c;
     };
     
+    struct OneCase {
+      int a,b,c,d;
+    };
   
     
-    DAMPI_Register(proc, n, 2, foo, bar);
-    if (!proc) {
-      struct FooCase *fc = malloc(sizeof(struct FooCase));
-      fc->a = 3;
-      fc->b = 4;
-      DAMPI_Start(foo, sizeof(struct FooCase), fc);
-      free(fc);
-    } else {
-      struct BarCase *bc = malloc(sizeof(struct BarCase));
-      bc->a = bc->b = bc->c = 10;
-      DAMPI_Start(bar, sizeof(struct BarCase), bc);
+    DAMPI_Register(proc, n, 3, zero, one, two);
+    
+    
+    switch(proc) {
+      case 0:
+        {
+        struct ZeroCase * zerosc = malloc(sizeof(struct ZeroCase));
+        DAMPI_Start(zero, sizeof(struct ZeroCase), zerosc);
+        break;
+        }
+      case 1:
+        {
+        struct OneCase * onesc = malloc(sizeof(struct OneCase));
+        DAMPI_Start(one, sizeof(struct OneCase), onesc);
+        break;
+        }
+      case 2:
+        {
+        struct TwoCase * twosc = malloc(sizeof(struct TwoCase));
+        DAMPI_Start(two, sizeof(struct TwoCase), twosc);
+        break;
+        }
     }
 
     
