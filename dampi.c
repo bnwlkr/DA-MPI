@@ -22,7 +22,7 @@ void DAMPI_Register(int proc, int n, int nf, ...) {
 }
 
 int DAMPI_Line () {
-  return info->sk->line;
+  return info->line;
 }
 
 void DAMPI_Start(dampi_func f, int sc_size, void* suitcase) {

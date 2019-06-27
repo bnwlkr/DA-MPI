@@ -62,17 +62,12 @@ static void swap(int a, int b) {
   char dummy;
   int other_rank = info->rank==a ? b : a;
   int other_proc = info->rankprocs[other_rank];
-  void* temp = malloc(info->sc_size + sizeof(struct SwapKit));
+  void* temp = malloc(info->sc_size);
   MPI_Status status;
-  int package_size = sizeof(struct SwapKit) + info->sc_size;
-  void * package = malloc(package_size);
-  memcpy(package, info->suitcase, info->sc_size);
-  memcpy(&package[info->sc_size], info->sk, sizeof(struct SwapKit));
-  MPI_Sendrecv(package, package_size, MPI_BYTE, other_proc, 0, temp, package_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, &status);
+  MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, &status);
   memcpy(info->suitcase, temp, info->sc_size);
-  memcpy(info->sk, &temp[info->sc_size], sizeof(struct SwapKit));
   free(temp);
-  printf("LINE %d: %d\n", info->rank, info->sk->line);
+  MPI_Wait();
   printf("SWAP %d <--> %d\n", info->rank, other_rank);
   info->rank = other_rank;
 }
@@ -102,6 +97,7 @@ int DAMPI_Airlock () {
     }
   } else {
     migration: UNLOCKBN();
+    // BROADCAST WAITING AT AIRLOCK, any attempted operation with this node is cancelled and the other process jumps backwards
     int a = info->bt->a;
     int b = info->bt->b;
     int part = info->rank == a || info->rank == b;

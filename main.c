@@ -17,7 +17,7 @@ void zero (void* arg) {
     while (1) {
       sleep(rand()%5);
       int send;
-      case __LINE__: DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
+      DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD); case __LINE__: ;
     }
   }
 }
@@ -54,19 +54,7 @@ int main(int argc, char** argv) {
     proc_=proc;
     n_=n;
     printf("proc %d, %s, reporting for duty\n", proc, procname);
-    
-    
-    
-    MPI_Request request;
-    
-    
-    
-    printf("%p\n", request);
-    
-    
-    MPI_Finalize();
-    
-    return 0;
+  
     
     srand(time(NULL));
     

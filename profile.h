@@ -24,11 +24,6 @@ struct BNodeTable {
   int * freq;            // comms frequencies
 };
 
-struct SwapKit {
-  MPI_Request request;  // the request that this process will need to wait on
-  int line;             // the line number of the send/recv that this process needs to jump to when it migrates
-};
-
 struct ProcInfo {
  int proc, rank, n, n_edges, bnode, sc_size;
  MPI_Win bwin, freqwin, scwin;
@@ -37,7 +32,8 @@ struct ProcInfo {
  int* rankprocs;                  // rank->process map
  dampi_func* rankfuncs;           // rank->func map
  void* suitcase;
- struct SwapKit* sk;
+ MPI_Request request; 
+ int line;
 };
 
 /* called by all processes to participate in system profiling.
