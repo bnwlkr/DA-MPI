@@ -72,6 +72,7 @@ static void swap(int a, int b) {
   memcpy(info->suitcase, temp, info->sc_size);
   memcpy(info->sk, &temp[info->sc_size], sizeof(struct SwapKit));
   free(temp);
+  printf("LINE %d: %d\n", info->rank, info->sk->line);
   printf("SWAP %d <--> %d\n", info->rank, other_rank);
   info->rank = other_rank;
 }

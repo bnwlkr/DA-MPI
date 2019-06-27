@@ -55,6 +55,19 @@ int main(int argc, char** argv) {
     n_=n;
     printf("proc %d, %s, reporting for duty\n", proc, procname);
     
+    
+    
+    MPI_Request request;
+    
+    
+    
+    printf("%p\n", request);
+    
+    
+    MPI_Finalize();
+    
+    return 0;
+    
     srand(time(NULL));
     
     struct ZeroCase {
@@ -68,15 +81,10 @@ int main(int argc, char** argv) {
     struct OneCase {
       int a,b,c,d;
     };
+    
   
     
     DAMPI_Register(proc, n, 3, zero, one, two);
-    
-    int send;
-    
-    DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
-    return 0;
-    
     
     switch(proc) {
       case 0:

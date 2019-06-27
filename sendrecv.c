@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "sendrecv.h"
 #include "profile.h"
@@ -21,7 +22,7 @@
 // test: whether this process needs to go straight to testing
 
 int DAMPI_Send(int line, const void *buf, int count, MPI_Datatype datatype, short dest, short tag, MPI_Comm comm) {
-  if (info->sk) goto test;
+  if (info->sk->line != -1) goto test;
   if (info->proc != dest) {
     int inc = 1; 
     MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->freqwin);
@@ -29,17 +30,20 @@ int DAMPI_Send(int line, const void *buf, int count, MPI_Datatype datatype, shor
     MPI_Win_unlock(info->bnode, info->freqwin);
   }
   int dampi_tag = ((dest << 16) | (tag & 0xffff));
-  MPI_Request request;
-  info->sk->request = request;
   info->sk->line = line;
-  int res = MPI_Isend(buf, count, datatype, info->rankprocs[dest], dampi_tag, comm, &request);
+  int res = MPI_Isend(buf, count, datatype, info->rankprocs[dest], dampi_tag, comm, &info->sk->request);
   if (res != MPI_SUCCESS) return res;
   test: ;
+  MPI_Status status;
   int done = 0;
   while (!done) {
     DAMPI_Airlock();
-    MPI_Test(&info->sk->request, &done, NULL);
+    printf("attempting to test\n");
+    MPI_Test(&info->sk->request, &done, &status);
+    printf("done testing\n");
+    sleep(2);
   }
+  info->sk->line = -1;
   return MPI_SUCCESS;
 }
 

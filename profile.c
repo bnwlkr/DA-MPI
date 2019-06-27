@@ -103,11 +103,12 @@ void profile (int proc, int n) {
   info->rankprocs = malloc(sizeof(int)*n);
   info->rankfuncs = malloc(sizeof(dampi_func)*n);
   info->sk = malloc(sizeof(struct SwapKit));
-  info->delays = calloc(info->n_edges, sizeof(double));
   info->proc = proc;
   info->rank = proc;
   info->n = n;
   info->n_edges = n*(n-1)/2;
+  info->sk->line = -1;
+  info->delays = calloc(info->n_edges, sizeof(double));
   MPI_Win delay_win;
   MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);
   char data[DATA_SIZE];
