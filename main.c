@@ -11,28 +11,35 @@
 int proc_;
 int n_;
 
+
 void zero (void* arg) {
-//  goto info->line;
-  while (1) {
-//    DAMPI_Send()
+  switch (DAMPI_Line()) { case -1:
+    while (1) {
+      sleep(rand()%5);
+      int send;
+      case __LINE__: DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
+    }
   }
 }
 
 void one (void* arg) {
-  while (1) {
-//    sleep(rand()%5);
-    DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
-    if (DAMPI_Airlock()) return;
+  switch (DAMPI_Line()) { case -1:
+    while (1) {
+      sleep(rand()%5);
+      int send;
+      case __LINE__: DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
+    }
   }
 }
 
 void two (void* arg) {
-  while (1) {
-    sleep(rand()%8);
-    DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
-    if (DAMPI_Airlock()) return;
+  switch (DAMPI_Line()) { case -1:
+    while (1) {
+      sleep(rand()%5);
+      int send;
+      case __LINE__: DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
+    }
   }
-
 }
 
 int main(int argc, char** argv) {
@@ -49,9 +56,6 @@ int main(int argc, char** argv) {
     printf("proc %d, %s, reporting for duty\n", proc, procname);
     
     srand(time(NULL));
-    int size;
-    MPI_Type_size(MPI_BYTE, &size);
-    printf("%d\n", size);
     
     struct ZeroCase {
       int a,b;
@@ -68,7 +72,9 @@ int main(int argc, char** argv) {
     
     DAMPI_Register(proc, n, 3, zero, one, two);
     
-    DAMPI_Send(NULL, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
+    int send;
+    
+    DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
     return 0;
     
     

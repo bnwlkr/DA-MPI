@@ -6,9 +6,22 @@
 #include "profile.h"
 #include "dampi.h"
 
-#define HEADER_SIZE 
+/*  Now, everything that enters the airlock will have a request that it is waiting on.
+ *  So, when a swap occurs, the swapping processes can trade request objects, and the line
+ *  number of the send or recv that they were executing when they entered the airlock.
+ *  The newly switched process can then enter the send and start waiting on the request 
+ *  that it received. 
+ *  
+ *  This also means that there is no need for a mesage forwarding system. If a process enters the
+ *  airlock and finds out that its request concerns the swapping ranks, it can cancel it and resend.
+ *
+ */
 
-int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, short dest, short tag, MPI_Comm comm) {
+// line: the line number of this DAMPI_Send call
+// test: whether this process needs to go straight to testing
+
+int DAMPI_Send(int line, const void *buf, int count, MPI_Datatype datatype, short dest, short tag, MPI_Comm comm) {
+  if (info->sk) goto test;
   if (info->proc != dest) {
     int inc = 1; 
     MPI_Win_lock(MPI_LOCK_EXCLUSIVE, info->bnode, 0, info->freqwin);
@@ -17,18 +30,21 @@ int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, short dest, sh
   }
   int dampi_tag = ((dest << 16) | (tag & 0xffff));
   MPI_Request request;
+  info->sk->request = request;
+  info->sk->line = line;
   int res = MPI_Isend(buf, count, datatype, info->rankprocs[dest], dampi_tag, comm, &request);
   if (res != MPI_SUCCESS) return res;
+  test: ;
   int done = 0;
   while (!done) {
     DAMPI_Airlock();
-    MPI_Test(&request, &done, NULL);
+    MPI_Test(&info->sk->request, &done, NULL);
   }
-  return res;
+  return MPI_SUCCESS;
 }
 
 
-int DAMPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status * status) {
+int DAMPI_Recv(void *buf, int count, MPI_Datatype datatype, short source, short tag, MPI_Comm comm, MPI_Status * status) {
   
 
 

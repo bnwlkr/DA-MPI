@@ -81,7 +81,10 @@ void DAMPI_Finalize () {
   MPI_Win_free(&info->bwin);
   MPI_Win_free(&info->scwin);
   MPI_Win_free(&info->freqwin);
+  free(info->rankprocs);
+  free(info->rankfuncs);
   free(info->delays);
+  free(info->sk);
   free(info);
 }
 
@@ -99,11 +102,12 @@ void profile (int proc, int n) {
   info = malloc(sizeof(struct ProcInfo));
   info->rankprocs = malloc(sizeof(int)*n);
   info->rankfuncs = malloc(sizeof(dampi_func)*n);
+  info->sk = malloc(sizeof(struct SwapKit));
+  info->delays = calloc(info->n_edges, sizeof(double));
   info->proc = proc;
   info->rank = proc;
   info->n = n;
   info->n_edges = n*(n-1)/2;
-  info->delays = calloc(info->n_edges, sizeof(double));
   MPI_Win delay_win;
   MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);
   char data[DATA_SIZE];

@@ -19,10 +19,11 @@ void DAMPI_Register(int proc, int n, int nf, ...);
  */
 void DAMPI_Start(dampi_func f, int sc_size, void* suitcase);
 
+int DAMPI_Line ();
 
 /*  DAMPI's Send function. Adds a header on to all messages to indicate the rank they are intended for.
  */
-int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, short dest, short tag, MPI_Comm comm);
+int DAMPI_Send(int line, const void *buf, int count, MPI_Datatype datatype, short dest, short tag, MPI_Comm comm);
 
 /*  View the state of the system
  */
