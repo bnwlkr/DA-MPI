@@ -64,11 +64,12 @@ static void respond (char* data) {
 /* measure latencies with other procs */
 static void measure (char* data) {
   int offset_ = boffset(info->proc);
+  MPI_Status status;    // for mpich
   for (int i = info->proc+1; i < info->n; i++) {
     double t0 = MPI_Wtime();
     for (int j = 0; j < TRIALS; j++) {
       MPI_Ssend(data, DATA_SIZE, MPI_BYTE, i, REQUEST, MPI_COMM_WORLD);
-      MPI_Recv(data, DATA_SIZE, MPI_BYTE, i, RESPONSE, MPI_COMM_WORLD, NULL);
+      MPI_Recv(data, DATA_SIZE, MPI_BYTE, i, RESPONSE, MPI_COMM_WORLD, &status);
     }
     double t1 = MPI_Wtime();
     info->delays[offset_ + i-(info->proc+1)] = t1-t0;
@@ -132,7 +133,6 @@ void profile (int proc, int n) {
 
 void DAMPI_Diag() {
   if (info->proc == info->bnode) {
-    printf("cvalue: %f\n", value(info->bt, info->rankprocs));
     printf("suitcase size: %d\n", info->sc_size);
     printf("n: %d, n_edges: %d, bnode: %d\n", info->n, info->n_edges, info->bnode);
     printf("a: %d, b: %d\n", info->bt->a, info->bt->b);

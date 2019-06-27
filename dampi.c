@@ -1,9 +1,10 @@
-#include "dampi.h"
-#include "profile.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "dampi.h"
+#include "profile.h"
 
 dampi_func* funcs;
 int n_funcs;

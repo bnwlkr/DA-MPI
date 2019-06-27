@@ -9,6 +9,20 @@ static void get_bt (struct BNodeTable* bt) {
   MPI_Get(bt->freq, info->n_edges, MPI_INT, info->bnode, 0, info->n_edges, MPI_INT, info->freqwin);
 }
 
+double value (struct BNodeTable* bt, int* rankprocs) {
+  double sum = 0.0;
+  for (int i = 0; i < info->n-1; i++) {
+    for (int j = i+1; j < info->n; j++) {
+      int offset = eoffset(i,j);
+      int freq = bt->freq[offset];
+      int iproc = rankprocs[i];
+      int jproc = rankprocs[j];
+      double delay = info->delays[eoffset(iproc,jproc)];
+      sum += (double)freq/delay;
+    }
+  }
+  return sum;
+}
 
 int should_migrate (struct BNodeTable* bt) {
   double current_val = value(bt, info->rankprocs);
@@ -37,21 +51,6 @@ int should_migrate (struct BNodeTable* bt) {
   return -1;
 }
 
-double value (struct BNodeTable* bt, int* rankprocs) {
-  double sum = 0.0;
-  for (int i = 0; i < info->n-1; i++) {
-    for (int j = i+1; j < info->n; j++) {
-      int offset = eoffset(i,j);
-      int freq = bt->freq[offset];
-      int iproc = rankprocs[i];
-      int jproc = rankprocs[j];
-      double delay = info->delays[eoffset(iproc,jproc)];
-      sum += (double)freq/delay;
-    }
-  }
-  return sum;
-}
-
 
 static void swap_rankproc_info () {
   int temp = info->rankprocs[info->bt->a];
@@ -64,7 +63,8 @@ static void swap(int a, int b) {
   int other_rank = info->rank==a ? b : a;
   int other_proc = info->rankprocs[other_rank];
   void* temp = malloc(info->sc_size);
-  MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, NULL);
+  MPI_Status status;
+  MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, &status);
   memcpy(info->suitcase, temp, info->sc_size);
   free(temp);
   printf("SWAP %d <--> %d\n", info->rank, other_rank);
