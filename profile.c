@@ -91,7 +91,7 @@ static void sync_delays (MPI_Win* delay_win) {
   MPI_Win_fence(0, *delay_win);
   MPI_Put(&info->delays[boffset(info->proc)], info->n-info->proc-1, MPI_DOUBLE, 0, boffset(info->proc), info->n-info->proc-1, MPI_DOUBLE, *delay_win);
   MPI_Win_fence(0, *delay_win);
-  MPI_Win_fence(0, *delay_win);
+  MPI_Win_fence(0, *delay_win); // TODO : change to BCAST
   MPI_Get(info->delays, info->n_edges, MPI_DOUBLE, 0, 0, info->n_edges, MPI_DOUBLE, *delay_win);
   MPI_Win_fence(0, *delay_win);
 }
@@ -105,7 +105,7 @@ void profile (int proc, int n) {
   info->rank = proc;
   info->n = n;
   info->n_edges = n*(n-1)/2;
-  info->line = -1;
+  info->line = 0;
   info->delays = calloc(info->n_edges, sizeof(double));
   MPI_Win delay_win;
   MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);

@@ -13,31 +13,42 @@ int n_;
 
 
 void zero (void* arg) {
-  switch (DAMPI_Line()) { case -1:
-    while (1) {
+    int done = 0;
+    while (!done) {
+      DAMPI_Diag();
+      airlock: switch (DAMPI_Airlock()) { case 0: ;
       sleep(rand()%5);
-      int send;
-      DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD); case __LINE__: ;
+      int send = 29;
+      case __LINE__: if (DAMPI_Send(__LINE__, &send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD)) goto airlock;
+      printf("ZERO (%d) SEND: %d\n", proc_, send);
     }
   }
 }
 
 void one (void* arg) {
-  switch (DAMPI_Line()) { case -1:
-    while (1) {
+    int done = 0;
+    while (!done) {
+      DAMPI_Diag();
+      airlock: switch (DAMPI_Airlock()) { case 0: ;
       sleep(rand()%5);
       int send;
-      case __LINE__: DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
+      case __LINE__: if (DAMPI_Recv(__LINE__, &send, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, NULL)) goto airlock;
+      printf("ONE (%d) RECV: %d\n", proc_, send);
+      case __LINE__: if (DAMPI_Send(__LINE__, &send, 1, MPI_INT, 2, 0, MPI_COMM_WORLD)) goto airlock;
+      printf("ONE (%d) SEND: %d\n", proc_, send);
     }
   }
 }
 
 void two (void* arg) {
-  switch (DAMPI_Line()) { case -1:
-    while (1) {
+  int done = 0;
+  while (!done) {
+      DAMPI_Diag();
+      airlock: switch (DAMPI_Airlock()) { case 0: ;
       sleep(rand()%5);
       int send;
-      case __LINE__: DAMPI_Send(__LINE__, &send, 1, MPI_INT, rand()%n_, 0, MPI_COMM_WORLD);
+      case __LINE__: if (DAMPI_Recv(__LINE__, &send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, NULL)) goto airlock;
+      printf("TWO (%d) RECV: %d\n", proc_, send);
     }
   }
 }
@@ -70,7 +81,6 @@ int main(int argc, char** argv) {
       int a,b,c,d;
     };
     
-  
     
     DAMPI_Register(proc, n, 3, zero, one, two);
     

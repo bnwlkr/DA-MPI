@@ -1,8 +1,9 @@
-#include "migrate.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
+#include "migrate.h"
 
 static void get_bt (struct BNodeTable* bt) {
   MPI_Get(bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
@@ -51,7 +52,6 @@ int should_migrate (struct BNodeTable* bt) {
   return -1;
 }
 
-
 static void swap_rankproc_info () {
   int temp = info->rankprocs[info->bt->a];
   info->rankprocs[info->bt->a] = info->rankprocs[info->bt->b];
@@ -63,11 +63,15 @@ static void swap(int a, int b) {
   int other_rank = info->rank==a ? b : a;
   int other_proc = info->rankprocs[other_rank];
   void* temp = malloc(info->sc_size);
+  int other_line;
   MPI_Status status;
   MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, &status);
+//  printf("suitcase sent\n");
+  MPI_Sendrecv(&info->line, 1, MPI_INT, other_proc, 0, &other_line, 1, MPI_INT, other_proc, 0, MPI_COMM_WORLD, &status);
+//  printf("line sent\n");
   memcpy(info->suitcase, temp, info->sc_size);
   free(temp);
-  MPI_Wait();
+  info->line = other_line; 
   printf("SWAP %d <--> %d\n", info->rank, other_rank);
   info->rank = other_rank;
 }
@@ -97,7 +101,20 @@ int DAMPI_Airlock () {
     }
   } else {
     migration: UNLOCKBN();
-    // BROADCAST WAITING AT AIRLOCK, any attempted operation with this node is cancelled and the other process jumps backwards
+    MPI_Request mig_requests[info->n];
+    for (int i = 0; i < info->n; i++) {
+      if (i != info->proc) {
+        MPI_Isend(NULL, 0, MPI_BYTE, i, MIGREQUEST, MPI_COMM_WORLD, &mig_requests[i]);
+      }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Status cancel_status;
+    for (int i = 0; i < info->n; i++) {
+      if (i != info->proc) {
+        MPI_Cancel(&mig_requests[i]);
+        MPI_Wait(&mig_requests[i], &cancel_status);
+      }
+    }
     int a = info->bt->a;
     int b = info->bt->b;
     int part = info->rank == a || info->rank == b;
@@ -111,10 +128,10 @@ int DAMPI_Airlock () {
     MPI_Win_fence(0, info->bwin);
     if (part) {
       info->rankfuncs[info->rank](info->suitcase);
-      return 1; 
+      assert(0); // DONE!
     }
   }
-  return 0;
+  return info->line;
 }
 
 

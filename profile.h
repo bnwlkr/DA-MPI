@@ -32,7 +32,6 @@ struct ProcInfo {
  int* rankprocs;                  // rank->process map
  dampi_func* rankfuncs;           // rank->func map
  void* suitcase;
- MPI_Request request; 
  int line;
 };
 
