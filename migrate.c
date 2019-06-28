@@ -66,9 +66,7 @@ static void swap(int a, int b) {
   int other_line;
   MPI_Status status;
   MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, &status);
-//  printf("suitcase sent\n");
   MPI_Sendrecv(&info->line, 1, MPI_INT, other_proc, 0, &other_line, 1, MPI_INT, other_proc, 0, MPI_COMM_WORLD, &status);
-//  printf("line sent\n");
   memcpy(info->suitcase, temp, info->sc_size);
   free(temp);
   info->line = other_line; 

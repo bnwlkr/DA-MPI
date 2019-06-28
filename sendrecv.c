@@ -59,8 +59,8 @@ int DAMPI_Send(int line, const void *buf, int count, MPI_Datatype datatype, int 
       MPI_Wait(&send_request, &cancel_status);
       int cancelled = 0;
       MPI_Test_cancelled(&cancel_status, &cancelled);
-      if (cancelled) { return 1; }
-      info->line = 0; // send actually succeeded
+      if (cancelled) { return 1; printf("SEND CANCELLED\n"); }
+      info->line = 0;
       return 0;
     }
   }
@@ -95,7 +95,7 @@ int DAMPI_Recv(int line, void *buf, int count, MPI_Datatype datatype, int source
       MPI_Wait(&recv_request, &cancel_status);
       int cancelled = 0;
       MPI_Test_cancelled(&cancel_status, &cancelled);
-      if (cancelled) { return 1; }
+      if (cancelled) { return 1; printf("RECEIVE_CANCELLED\n"); }
       info->line = 0;
       return 0;
     }
