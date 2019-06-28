@@ -21,9 +21,6 @@ void DAMPI_Register(int proc, int n, int nf, ...) {
   va_end(args);
 }
 
-int DAMPI_Line () {
-  return info->line;
-}
 
 void DAMPI_Start(dampi_func f, int sc_size, void* suitcase) {
   int n = info->n;

@@ -63,13 +63,10 @@ static void swap(int a, int b) {
   int other_rank = info->rank==a ? b : a;
   int other_proc = info->rankprocs[other_rank];
   void* temp = malloc(info->sc_size);
-  int other_line;
   MPI_Status status;
   MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, &status);
-  MPI_Sendrecv(&info->line, 1, MPI_INT, other_proc, 0, &other_line, 1, MPI_INT, other_proc, 0, MPI_COMM_WORLD, &status);
   memcpy(info->suitcase, temp, info->sc_size);
   free(temp);
-  info->line = other_line; 
   printf("SWAP %d <--> %d\n", info->rank, other_rank);
   info->rank = other_rank;
 }
@@ -93,43 +90,27 @@ int DAMPI_Airlock () {
       printf ("SWAP REQUEST: %d <--> %d\n", info->rank, info->bt->b);
       info->bt->a = info->rank;
       MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
-      goto migration;
-    } else {
-      UNLOCKBN();
-    }
-  } else {
-    migration: UNLOCKBN();
-    MPI_Request mig_requests[info->n];
-    for (int i = 0; i < info->n; i++) {
-      if (i != info->proc) {
-        MPI_Isend(NULL, 0, MPI_BYTE, i, MIGREQUEST, MPI_COMM_WORLD, &mig_requests[i]);
-      }
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Status cancel_status;
-    for (int i = 0; i < info->n; i++) {
-      if (i != info->proc) {
-        MPI_Cancel(&mig_requests[i]);
-        MPI_Wait(&mig_requests[i], &cancel_status);
-      }
-    }
-    int a = info->bt->a;
-    int b = info->bt->b;
-    int part = info->rank == a || info->rank == b;
-    if (part) {
-      swap(a,b);
-    }
-    swap_rankproc_info();
-    MPI_Win_fence(0, info->bwin);
-    info->bt->a = info->bt->b = -1;
-    MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
-    MPI_Win_fence(0, info->bwin);
-    if (part) {
-      info->rankfuncs[info->rank](info->suitcase);
-      assert(0); // DONE!
     }
   }
-  return info->line;
+  UNLOCKBN();
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (info->bt->a == -1) return 1;
+  int a = info->bt->a;
+  int b = info->bt->b;
+  int part = info->rank == a || info->rank == b;
+  if (part) {
+    swap(a,b);
+  }
+  swap_rankproc_info();
+  MPI_Win_fence(0, info->bwin);
+  info->bt->a = info->bt->b = -1;
+  MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+  MPI_Win_fence(0, info->bwin);
+  if (part) {
+    info->rankfuncs[info->rank](info->suitcase);
+    return 0;
+  }
+  return 1;
 }
 
 

@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
+#include <assert.h> 
 
 #include "dampi.h"
 
@@ -13,40 +14,27 @@ int n_;
 
 
 void zero (void* arg) {
-    int done = 0;
-    while (!done) {
-//      DAMPI_Diag();
-      airlock: switch (DAMPI_Airlock()) { case 0: ;
-//      sleep(rand()%5);
-      int send = 29;
-      case __LINE__: if (DAMPI_Send(__LINE__, &send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD)) goto airlock;
-    }
-  }
+  do {
+    int send = 28;
+    assert(DAMPI_Send(&send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD) == MPI_SUCCESS);
+  } while (DAMPI_Airlock());
 }
 
 void one (void* arg) {
-    int done = 0;
-    while (!done) {
-//      DAMPI_Diag();
-      airlock: switch (DAMPI_Airlock()) { case 0: ;
-//      sleep(rand()%5);
-      int send;
-      case __LINE__: if (DAMPI_Recv(__LINE__, &send, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, NULL)) goto airlock;
-      case __LINE__: if (DAMPI_Send(__LINE__, &send, 1, MPI_INT, 2, 0, MPI_COMM_WORLD)) goto airlock;
-    }
-  }
+  do {
+    MPI_Status status;
+    int send;
+    assert(DAMPI_Recv(&send, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status) == MPI_SUCCESS);
+    assert(DAMPI_Send(&send, 1, MPI_INT, 2, 0, MPI_COMM_WORLD) == MPI_SUCCESS);
+  } while (DAMPI_Airlock());
 }
 
 void two (void* arg) {
-  int done = 0;
-  while (!done) {
-//      DAMPI_Diag();
-      airlock: switch (DAMPI_Airlock()) { case 0: ;
-//      sleep(rand()%5);
-      int send;
-      case __LINE__: if (DAMPI_Recv(__LINE__, &send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, NULL)) goto airlock;
-    }
-  }
+  do {
+    int send;
+    MPI_Status status;
+    assert(DAMPI_Recv(&send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, &status) == MPI_SUCCESS);
+  } while (DAMPI_Airlock());
 }
 
 int main(int argc, char** argv) {
@@ -101,6 +89,7 @@ int main(int argc, char** argv) {
         }
     }
 
+    printf("%d done\n", proc);
     MPI_Barrier(MPI_COMM_WORLD);
   
     DAMPI_Diag();

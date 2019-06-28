@@ -105,7 +105,6 @@ void profile (int proc, int n) {
   info->rank = proc;
   info->n = n;
   info->n_edges = n*(n-1)/2;
-  info->line = 0;
   info->delays = calloc(info->n_edges, sizeof(double));
   MPI_Win delay_win;
   MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);
@@ -113,13 +112,13 @@ void profile (int proc, int n) {
   switch (proc) {
     case 0:
       measure(data);
-      MPI_Ssend(data, DATA_SIZE, MPI_BYTE, 1, NEXT, MPI_COMM_WORLD);
+      MPI_Send(data, DATA_SIZE, MPI_BYTE, 1, NEXT, MPI_COMM_WORLD);
       break;
     default:
       respond(data);
       measure(data);
       if (proc < n-1) {
-        MPI_Ssend(data, DATA_SIZE, MPI_BYTE, proc+1, NEXT, MPI_COMM_WORLD);
+        MPI_Send(data, DATA_SIZE, MPI_BYTE, proc+1, NEXT, MPI_COMM_WORLD);
       }
   }
   sync_delays(&delay_win);

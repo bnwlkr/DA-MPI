@@ -32,7 +32,6 @@ struct ProcInfo {
  int* rankprocs;                  // rank->process map
  dampi_func* rankfuncs;           // rank->func map
  void* suitcase;
- int line;
 };
 
 /* called by all processes to participate in system profiling.
