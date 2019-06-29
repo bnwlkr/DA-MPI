@@ -19,5 +19,5 @@ int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int 
 
 
 int DAMPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status * status) {
-  return MPI_Recv(buf, count, datatype, info->rankprocs[source], tag, comm, status);
+  return MPI_Recv(buf, count, datatype, source == MPI_ANY_SOURCE ? MPI_ANY_SOURCE : info->rankprocs[source], tag, comm, status);
 }

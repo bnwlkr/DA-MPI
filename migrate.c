@@ -82,6 +82,7 @@ static void UNLOCKBN () {
 }
 
 int DAMPI_Airlock () {
+  printf("%d in AIRLOCK\n", info->rank);
   LOCKBN();
   get_bt(info->bt);
   if (info->bt->a == -1) {
@@ -94,6 +95,7 @@ int DAMPI_Airlock () {
   }
   UNLOCKBN();
   MPI_Barrier(MPI_COMM_WORLD);
+  printf("%d PAST AIRLOCK BARRIER\n", info->rank);
   if (info->bt->a == -1) return 1;
   int a = info->bt->a;
   int b = info->bt->b;
