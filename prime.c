@@ -5,6 +5,7 @@
 #include "dampi.h"
 #include <time.h>
 #include <stdlib.h>
+#include "profile.h"
 
 typedef enum {FILTERED, PRIME, GOTOAIRLOCK, NEXT, DIE} MESSAGE;
 
@@ -27,21 +28,20 @@ void generator(void* arg) {
   MPI_Status status;
   int recv;
   do {
-    printf("GENERATOR WAIT SEND\n");
+//    printf("GENERATOR WAIT SEND\n");
     DAMPI_Send(&gensc->next, 1, MPI_INT, 1, NEXT, MPI_COMM_WORLD);
-    printf("GENERATOR SEND\n");
     gensc->next+=2;
-    printf("GENERATOR WAIT RECV\n"); 
+//    printf("GENERATOR WAIT RECV\n"); 
     DAMPI_Recv(&recv, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    printf("GENERATOR RECV %d\n", recv);
+    printf("GENERATOR RECV %d FROM %d\n", recv, status.MPI_SOURCE);
     if (status.MPI_TAG==PRIME) {
       gensc->primes[status.MPI_SOURCE] = recv;
       if (status.MPI_SOURCE == n-1) {
-        DAMPI_Airlock();
+        DAMPI_Airlock(0);
         break;
       }
     }
-  } while (DAMPI_Airlock());
+  } while (DAMPI_Airlock(1));
   printf("[");
   for (int i = 0; i < n; i++) {
     printf(" %d ", gensc->primes[i]);
@@ -58,41 +58,41 @@ void worker (void* arg) {
   MPI_Status status;
   int recv = 9;
   do {
-    printf("%d WAIT RECV\n", worksc->rank);
+//    printf("%d WAIT RECV\n", worksc->rank);
     DAMPI_Recv(&recv, 1, MPI_INT, rank-1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    printf("%d RECV\n", worksc->rank);
     
     if (status.MPI_TAG == NEXT) {
+      printf("%d (with prime %d) RECV %d\n", worksc->rank, worksc->prime, recv);
       if (worksc->prime == -1 || worksc->prime%recv == 0) {
-          printf("%d WAIT SEND TO GENERATOR\n", worksc->rank);
+//          printf("%d WAIT SEND TO GENERATOR\n", worksc->rank);
           DAMPI_Send(&recv, 1, MPI_INT, 0, worksc->prime == -1 ? PRIME : FILTERED, MPI_COMM_WORLD);
-          printf("%d SEND TO GENERATOR\n", worksc->rank);
+          printf("%d SEND %d TO GENERATOR\n", worksc->rank, recv);
           worksc->prime = worksc->prime == -1 ? recv : worksc->prime;
           if (rank < n-1) {
-            printf("%d WAIT SEND GOTOAIRLOCK\n", worksc->rank);
+//            printf("%d WAIT SEND GOTOAIRLOCK\n", worksc->rank);
             DAMPI_Send(&worksc->prime, 1, MPI_INT, rank+1, GOTOAIRLOCK, MPI_COMM_WORLD);
             printf("%d SEND GOTOAIRLOCK\n", worksc->rank);
           }
         } else if (worksc->prime%recv) {
-          printf("%d WAIT SEND NEXT\n", worksc->rank);
+//          printf("%d WAIT SEND NEXT\n", worksc->rank);
           DAMPI_Send(&recv, 1, MPI_INT, rank+1, NEXT, MPI_COMM_WORLD);
           printf("%d SEND NEXT\n", worksc->rank);
         }
     } else if (status.MPI_TAG == GOTOAIRLOCK) {
       if (rank < n-1) {
-          printf("%d WAIT FORWARD GOTOAIRLOCK\n", worksc->rank); 
+//          printf("%d WAIT FORWARD GOTOAIRLOCK\n", worksc->rank); 
           DAMPI_Send(&worksc->prime, 1, MPI_INT, rank+1, GOTOAIRLOCK, MPI_COMM_WORLD);
           printf("%d FORWARD GOTOAIRLOCK\n", worksc->rank);
         }
     } else if (status.MPI_TAG == DIE) {
       if (rank < n-1) {
-          printf("%d WAIT FORWARD DIE\n", worksc->rank);
+//          printf("%d WAIT FORWARD DIE\n", worksc->rank);
           DAMPI_Send(&worksc->prime, 1, MPI_INT, rank+1, DIE, MPI_COMM_WORLD);
           printf("%d FORWARD DIE\n", worksc->rank);
       }
       break;
     }
-  } while (DAMPI_Airlock());
+  } while (DAMPI_Airlock(1));
 }
 
 
@@ -130,7 +130,6 @@ int main(int argc, char** argv) {
         break;
       }
     }
-    
     
     DAMPI_Finalize();
     MPI_Finalize(); 

@@ -3,6 +3,7 @@
 
 #include <mpi.h>
 
+
 typedef void(*dampi_func)(void*);
 
 /*  Register which functions DAMPI will migrate between
@@ -24,6 +25,7 @@ void DAMPI_Start(dampi_func f, int sc_size, void* suitcase);
 int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
 
 
+
 int DAMPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status * status);
 
 /*  View the state of the system
@@ -32,7 +34,7 @@ void DAMPI_Diag();
 
 /*  The place where all processes go regularly to particpate in migrations. 
  */
-int DAMPI_Airlock();
+int DAMPI_Airlock(int migrate);
 
 /* Cleanup function. Free windows and data
 */

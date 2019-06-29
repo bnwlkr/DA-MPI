@@ -16,11 +16,11 @@ extern struct ProcInfo * info;
 enum MType {
     REQUEST,
     RESPONSE,
-    NEXT,
+    NEXTm,
 };
 
 struct BNodeTable {
-  int a, b;              // nodes that currently need to be migrated (-1 if none)
+  int a, b, valid;              // nodes that currently need to be migrated (-1 if none), and whether migration is valid
   int * freq;            // comms frequencies
 };
 

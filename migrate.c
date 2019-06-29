@@ -6,7 +6,7 @@
 #include "migrate.h"
 
 static void get_bt (struct BNodeTable* bt) {
-  MPI_Get(bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+  MPI_Get(bt, 3, MPI_INT, info->bnode, 0, 3, MPI_INT, info->bwin);
   MPI_Get(bt->freq, info->n_edges, MPI_INT, info->bnode, 0, info->n_edges, MPI_INT, info->freqwin);
 }
 
@@ -81,22 +81,34 @@ static void UNLOCKBN () {
   MPI_Win_unlock(info->bnode, info->bwin);
 }
 
-int DAMPI_Airlock () {
-  printf("%d in AIRLOCK\n", info->rank);
+int DAMPI_Airlock (int migrate) {
+  printf("%d in AIRLOCK (migrate: %d)\n", info->rank, migrate);
   LOCKBN();
-  get_bt(info->bt);
-  if (info->bt->a == -1) {
-    info->bt->b = should_migrate(info->bt);
-    if (info->bt->b != -1) {
-      printf ("SWAP REQUEST: %d <--> %d\n", info->rank, info->bt->b);
-      info->bt->a = info->rank;
-      MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+  if (!migrate) {
+    int put = 0; 
+    MPI_Put(&put, 1, MPI_INT, info->bnode, 2, 1, MPI_INT, info->bwin);
+  } else {
+    get_bt(info->bt);
+    if (info->bt->valid) {
+      if (info->bt->a == -1) {
+        info->bt->b = should_migrate(info->bt);
+        if (info->bt->b != -1) {
+          printf ("SWAP REQUEST: %d <--> %d\n", info->rank, info->bt->b);
+          info->bt->a = info->rank;
+          MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+        }
+      }
     }
   }
   UNLOCKBN();
   MPI_Barrier(MPI_COMM_WORLD);
-  printf("%d PAST AIRLOCK BARRIER\n", info->rank);
-  if (info->bt->a == -1) return 1;
+  MPI_Bcast(info->bt, 3, MPI_INT, info->bnode, MPI_COMM_WORLD);
+  printf("BCAST: a: %d, b: %d, valid: %d\n", info->bt->a, info->bt->b, info->bt->valid);
+  if (info->bt->a == -1 || !info->bt->valid) {
+    info->bt->a = info->bt->b = -1;
+    info->bt->valid = 1;
+    return 1;
+  }
   int a = info->bt->a;
   int b = info->bt->b;
   int part = info->rank == a || info->rank == b;
@@ -104,10 +116,6 @@ int DAMPI_Airlock () {
     swap(a,b);
   }
   swap_rankproc_info();
-  MPI_Win_fence(0, info->bwin);
-  info->bt->a = info->bt->b = -1;
-  MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
-  MPI_Win_fence(0, info->bwin);
   if (part) {
     info->rankfuncs[info->rank](info->suitcase);
     return 0;

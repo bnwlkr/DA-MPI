@@ -78,9 +78,8 @@ static void measure (char* data) {
 
 
 void DAMPI_Finalize () {
-  MPI_Win_free(&info->bwin);
-  MPI_Win_free(&info->scwin);
-  MPI_Win_free(&info->freqwin);
+//  MPI_Win_free(&info->bwin);
+//  MPI_Win_free(&info->freqwin);
   free(info->rankprocs);
   free(info->rankfuncs);
   free(info->delays);
@@ -112,13 +111,13 @@ void profile (int proc, int n) {
   switch (proc) {
     case 0:
       measure(data);
-      MPI_Send(data, DATA_SIZE, MPI_BYTE, 1, NEXT, MPI_COMM_WORLD);
+      MPI_Send(data, DATA_SIZE, MPI_BYTE, 1, NEXTm, MPI_COMM_WORLD);
       break;
     default:
       respond(data);
       measure(data);
       if (proc < n-1) {
-        MPI_Send(data, DATA_SIZE, MPI_BYTE, proc+1, NEXT, MPI_COMM_WORLD);
+        MPI_Send(data, DATA_SIZE, MPI_BYTE, proc+1, NEXTm, MPI_COMM_WORLD);
       }
   }
   sync_delays(&delay_win);
@@ -127,6 +126,7 @@ void profile (int proc, int n) {
   MPI_Win_allocate(info->n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt->freq, &info->freqwin);
   memset(info->bt->freq, 0, info->n_edges*sizeof(int));
   info->bt->a = info->bt->b = -1;
+  info->bt->valid = 1;
   for (int i = 0; i < info->n; i++) {
     info->rankprocs[i] = i;
   }

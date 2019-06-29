@@ -22,6 +22,7 @@ void DAMPI_Register(int proc, int n, int nf, ...) {
 }
 
 
+
 void DAMPI_Start(dampi_func f, int sc_size, void* suitcase) {
   int n = info->n;
   int myfunc;
@@ -46,8 +47,8 @@ void DAMPI_Start(dampi_func f, int sc_size, void* suitcase) {
     info->rankfuncs[i] = funcs[rank_nums[i]];
   }
   info->sc_size = max_size;
-  MPI_Win_allocate(info->sc_size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &info->suitcase, &info->scwin);
-  memcpy(info->suitcase, suitcase, sc_size);
+  info->suitcase = suitcase;
+  MPI_Win_create(info->suitcase, info->sc_size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &info->scwin);
   f(suitcase);
 }
 
