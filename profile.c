@@ -78,8 +78,8 @@ static void measure (char* data) {
 
 
 void DAMPI_Finalize () {
-//  MPI_Win_free(&info->bwin);
-//  MPI_Win_free(&info->freqwin);
+  MPI_Win_free(&info->bwin);
+  MPI_Win_free(&info->freqwin);
   free(info->rankprocs);
   free(info->rankfuncs);
   free(info->delays);

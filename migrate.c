@@ -46,7 +46,6 @@ int should_migrate (struct BNodeTable* bt) {
     }
   }
   if (highest_val - current_val > SWAP_THRESHOLD) {
-    printf("%f\n", highest_val-current_val);
     return highest_swap;
   }
   return -1;
@@ -82,7 +81,6 @@ static void UNLOCKBN () {
 }
 
 int DAMPI_Airlock (int migrate) {
-  printf("%d in AIRLOCK (migrate: %d)\n", info->rank, migrate);
   LOCKBN();
   if (!migrate) {
     int put = 0; 
@@ -93,7 +91,6 @@ int DAMPI_Airlock (int migrate) {
       if (info->bt->a == -1) {
         info->bt->b = should_migrate(info->bt);
         if (info->bt->b != -1) {
-          printf ("SWAP REQUEST: %d <--> %d\n", info->rank, info->bt->b);
           info->bt->a = info->rank;
           MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
         }
@@ -103,7 +100,6 @@ int DAMPI_Airlock (int migrate) {
   UNLOCKBN();
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Bcast(info->bt, 3, MPI_INT, info->bnode, MPI_COMM_WORLD);
-  printf("BCAST: a: %d, b: %d, valid: %d\n", info->bt->a, info->bt->b, info->bt->valid);
   if (info->bt->a == -1 || !info->bt->valid) {
     info->bt->a = info->bt->b = -1;
     info->bt->valid = 1;

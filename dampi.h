@@ -18,13 +18,13 @@ void DAMPI_Register(int proc, int n, int nf, ...);
  *  sc_size: size of data argument to this rank's function
  *  suitcase: this rank's data argument
  */
-void DAMPI_Start(dampi_func f, int sc_size, void* suitcase);
+void DAMPI_Start(dampi_func f, int sc_size, void** suitcase);
 
 /*  DAMPI's Send function.
  */
 int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
 
-
+int DAMPI_Rank();
 
 int DAMPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status * status);
 
