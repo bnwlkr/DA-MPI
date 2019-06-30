@@ -4,8 +4,8 @@
 #include <mpi.h>
 #include "dampi.h"
 
-#define TRIALS 100
-#define DATA_SIZE 40
+#define TRIALS 1
+#define DATA_SIZE 1
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -16,7 +16,7 @@ extern struct ProcInfo * info;
 enum MType {
     REQUEST,
     RESPONSE,
-    NEXTm,
+    NEXT,
 };
 
 struct BNodeTable {
@@ -40,7 +40,6 @@ struct ProcInfo {
  * 
  */
 void profile (int rank, int n);
-
 
 
 /*  get the offset in the edge tables for this edge

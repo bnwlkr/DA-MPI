@@ -1,0 +1,1 @@
+so I finally got a chance to compare running times between the two sieve implementations (one with DAMPI and one without) and the DAMPI implementation is catastrophically slower. I ran without any delay measurement and that created a 50% speedup, and decreased the number of delay measurement trials.

@@ -3,7 +3,7 @@
 
 #include "profile.h"
 
-#define SWAP_THRESHOLD 10
+#define SWAP_THRESHOLD 100
 
 
 

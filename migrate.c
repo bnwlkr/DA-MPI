@@ -51,10 +51,10 @@ int should_migrate (struct BNodeTable* bt) {
   return -1;
 }
 
-static void swap_rankproc_info () {
-  int temp = info->rankprocs[info->bt->a];
-  info->rankprocs[info->bt->a] = info->rankprocs[info->bt->b];
-  info->rankprocs[info->bt->b] = temp;
+static void swap_rankproc_info (int a, int b) {
+  int temp = info->rankprocs[a];
+  info->rankprocs[a] = info->rankprocs[b];
+  info->rankprocs[b] = temp;
 }
 
 static void swap(int a, int b) {
@@ -92,6 +92,7 @@ int DAMPI_Airlock (int migrate) {
         info->bt->b = should_migrate(info->bt);
         if (info->bt->b != -1) {
           info->bt->a = info->rank;
+          printf("SWAP REQUESTED: %d <--> %d\n", info->bt->a, info->bt->b);
           MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
         }
       }
@@ -103,6 +104,7 @@ int DAMPI_Airlock (int migrate) {
   if (info->bt->a == -1 || !info->bt->valid) {
     info->bt->a = info->bt->b = -1;
     info->bt->valid = 1;
+    MPI_Barrier(MPI_COMM_WORLD);
     return 1;
   }
   int a = info->bt->a;
@@ -111,7 +113,10 @@ int DAMPI_Airlock (int migrate) {
   if (part) {
     swap(a,b);
   }
-  swap_rankproc_info();
+  swap_rankproc_info(a,b);
+  DAMPI_Diag();
+  info->bt->a = info->bt->b = -1;
+  MPI_Barrier(MPI_COMM_WORLD);
   if (part) {
     info->rankfuncs[info->rank](info->suitcase);
     return 0;

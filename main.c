@@ -17,7 +17,7 @@ void zero (void* arg) {
   do {
     int send = 28;
     assert(DAMPI_Send(&send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD) == MPI_SUCCESS);
-  } while (DAMPI_Airlock());
+  } while (DAMPI_Airlock(1));
 }
 
 void one (void* arg) {
@@ -26,7 +26,7 @@ void one (void* arg) {
     int send;
     assert(DAMPI_Recv(&send, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status) == MPI_SUCCESS);
     assert(DAMPI_Send(&send, 1, MPI_INT, 2, 0, MPI_COMM_WORLD) == MPI_SUCCESS);
-  } while (DAMPI_Airlock());
+  } while (DAMPI_Airlock(1));
 }
 
 void two (void* arg) {
@@ -34,7 +34,7 @@ void two (void* arg) {
     int send;
     MPI_Status status;
     assert(DAMPI_Recv(&send, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, &status) == MPI_SUCCESS);
-  } while (DAMPI_Airlock());
+  } while (DAMPI_Airlock(1));
 }
 
 int main(int argc, char** argv) {
@@ -72,19 +72,19 @@ int main(int argc, char** argv) {
       case 0:
         {
         struct ZeroCase * zerosc = malloc(sizeof(struct ZeroCase));
-        DAMPI_Start(zero, sizeof(struct ZeroCase), zerosc);
+        DAMPI_Start(zero, sizeof(struct ZeroCase), (void*)&zerosc);
         break;
         }
       case 1:
         {
         struct OneCase * onesc = malloc(sizeof(struct OneCase));
-        DAMPI_Start(one, sizeof(struct OneCase), onesc);
+        DAMPI_Start(one, sizeof(struct OneCase), (void**)&onesc);
         break;
         }
       case 2:
         {
         struct TwoCase * twosc = malloc(sizeof(struct TwoCase));
-        DAMPI_Start(two, sizeof(struct TwoCase), twosc);
+        DAMPI_Start(two, sizeof(struct TwoCase), (void**)&twosc);
         break;
         }
     }

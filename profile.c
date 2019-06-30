@@ -90,9 +90,7 @@ static void sync_delays (MPI_Win* delay_win) {
   MPI_Win_fence(0, *delay_win);
   MPI_Put(&info->delays[boffset(info->proc)], info->n-info->proc-1, MPI_DOUBLE, 0, boffset(info->proc), info->n-info->proc-1, MPI_DOUBLE, *delay_win);
   MPI_Win_fence(0, *delay_win);
-  MPI_Win_fence(0, *delay_win); // TODO : change to BCAST
-  MPI_Get(info->delays, info->n_edges, MPI_DOUBLE, 0, 0, info->n_edges, MPI_DOUBLE, *delay_win);
-  MPI_Win_fence(0, *delay_win);
+  MPI_Bcast(info->delays, info->n_edges, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 
@@ -111,13 +109,13 @@ void profile (int proc, int n) {
   switch (proc) {
     case 0:
       measure(data);
-      MPI_Send(data, DATA_SIZE, MPI_BYTE, 1, NEXTm, MPI_COMM_WORLD);
+      MPI_Send(data, DATA_SIZE, MPI_BYTE, 1, NEXT, MPI_COMM_WORLD);
       break;
     default:
       respond(data);
       measure(data);
       if (proc < n-1) {
-        MPI_Send(data, DATA_SIZE, MPI_BYTE, proc+1, NEXTm, MPI_COMM_WORLD);
+        MPI_Send(data, DATA_SIZE, MPI_BYTE, proc+1, NEXT, MPI_COMM_WORLD);
       }
   }
   sync_delays(&delay_win);

@@ -100,7 +100,6 @@ int main(int argc, char** argv) {
         gensc->next = 3;
         gensc->primes[0] = 2;
         DAMPI_Start(generator, sizeof(struct GeneratorSC) + n*sizeof(int), (void**)&gensc);
-//        free(gensc);
         break;
       }
       default: {
@@ -109,18 +108,22 @@ int main(int argc, char** argv) {
         worksc->rank = rank;
         worksc->prime = -1;
         DAMPI_Start(worker, sizeof(struct WorkerSC), (void**)&worksc);
-//        free(worksc);
         break;
       }
     }
     
     if (!DAMPI_Rank()) {
+      struct GeneratorSC* ogensc = ((struct GeneratorSC*)(rank==0?(void*)gensc:(void*)worksc));
       printf("[");
       for (int i = 0; i < n; i++) {
-        printf(" %d ", ((struct GeneratorSC*)(rank==0?gensc:worksc))->primes[i]);
+        printf(" %d ", ogensc->primes[i]);
       }
       printf("]\n");
     }
+    
+    free(gensc);
+    free(worksc);
+    
     
     DAMPI_Finalize();
     MPI_Finalize(); 
