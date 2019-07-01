@@ -77,15 +77,6 @@ static void measure (char* data) {
 }
 
 
-void DAMPI_Finalize () {
-  MPI_Win_free(&info->bwin);
-  MPI_Win_free(&info->freqwin);
-  free(info->rankprocs);
-  free(info->rankfuncs);
-  free(info->delays);
-  free(info);
-}
-
 static void sync_delays (MPI_Win* delay_win) {
   MPI_Win_fence(0, *delay_win);
   MPI_Put(&info->delays[boffset(info->proc)], info->n-info->proc-1, MPI_DOUBLE, 0, boffset(info->proc), info->n-info->proc-1, MPI_DOUBLE, *delay_win);
@@ -94,19 +85,11 @@ static void sync_delays (MPI_Win* delay_win) {
 }
 
 
-void profile (int proc, int n) {
-  info = malloc(sizeof(struct ProcInfo));
-  info->rankprocs = malloc(sizeof(int)*n);
-  info->rankfuncs = malloc(sizeof(dampi_func)*n);
-  info->proc = proc;
-  info->rank = proc;
-  info->n = n;
-  info->n_edges = n*(n-1)/2;
-  info->delays = calloc(info->n_edges, sizeof(double));
+void profile () {
   MPI_Win delay_win;
   MPI_Win_create(info->delays, info->proc==0 ? info->n_edges*sizeof(double) : 0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delay_win);
   char data[DATA_SIZE];
-  switch (proc) {
+  switch (info->proc) {
     case 0:
       measure(data);
       MPI_Send(data, DATA_SIZE, MPI_BYTE, 1, NEXT, MPI_COMM_WORLD);
@@ -114,20 +97,12 @@ void profile (int proc, int n) {
     default:
       respond(data);
       measure(data);
-      if (proc < n-1) {
-        MPI_Send(data, DATA_SIZE, MPI_BYTE, proc+1, NEXT, MPI_COMM_WORLD);
+      if (info->proc < info->n-1) {
+        MPI_Send(data, DATA_SIZE, MPI_BYTE, info->proc+1, NEXT, MPI_COMM_WORLD);
       }
   }
   sync_delays(&delay_win);
   info->bnode = best();  
-  MPI_Win_allocate(sizeof(struct BNodeTable), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt, &info->bwin);
-  MPI_Win_allocate(info->n_edges*sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &info->bt->freq, &info->freqwin);
-  memset(info->bt->freq, 0, info->n_edges*sizeof(int));
-  info->bt->a = info->bt->b = -1;
-  info->bt->valid = 1;
-  for (int i = 0; i < info->n; i++) {
-    info->rankprocs[i] = i;
-  }
 }
 
 

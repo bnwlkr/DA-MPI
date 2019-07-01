@@ -11,7 +11,7 @@ typedef void(*dampi_func)(void*);
  *  proc: process number (original rank)
  *  n: number of processes in the COMM
  */ 
-void DAMPI_Register(int proc, int n, int nf, ...);
+int DAMPI_Register(int proc, int n, int nf, ...);
 
 /*  Profile MPI system and start this rank running f
  *  f: function that this rank will be running
@@ -25,6 +25,10 @@ void DAMPI_Start(dampi_func f, int sc_size, void** suitcase);
 int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm);
 
 int DAMPI_Rank();
+
+void DAMPI_Profile(int proc, int n);
+
+void DAMPI_Finalize();
 
 int DAMPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status * status);
 

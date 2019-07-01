@@ -39,7 +39,7 @@ struct ProcInfo {
  * select the 'best-connected' node and allocate a frequency table on it, notify every node of the best connected node
  * 
  */
-void profile (int rank, int n);
+void profile ();
 
 
 /*  get the offset in the edge tables for this edge

@@ -92,7 +92,6 @@ int DAMPI_Airlock (int migrate) {
         info->bt->b = should_migrate(info->bt);
         if (info->bt->b != -1) {
           info->bt->a = info->rank;
-          printf("SWAP REQUESTED: %d <--> %d\n", info->bt->a, info->bt->b);
           MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
         }
       }
@@ -114,7 +113,6 @@ int DAMPI_Airlock (int migrate) {
     swap(a,b);
   }
   swap_rankproc_info(a,b);
-  DAMPI_Diag();
   info->bt->a = info->bt->b = -1;
   MPI_Barrier(MPI_COMM_WORLD);
   if (part) {

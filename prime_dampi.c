@@ -51,7 +51,6 @@ void worker (void* arg) {
   int recv = 9;
   do {
     DAMPI_Recv(&recv, 1, MPI_INT, rank-1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    
     if (status.MPI_TAG == NEXT) {
       if (worksc->prime == -1 || worksc->prime%recv == 0) {
           DAMPI_Send(&recv, 1, MPI_INT, 0, worksc->prime == -1 ? PRIME : FILTERED, MPI_COMM_WORLD);
@@ -88,7 +87,11 @@ int main(int argc, char** argv) {
     MPI_Get_processor_name(procname, &len);
   
     
-    DAMPI_Register(rank, n, 2, generator, worker);
+    if (DAMPI_Register(rank, n, 2, generator, worker)) {
+      printf("no profile file found for this configuration\n");
+      MPI_Finalize();
+      return 0;
+    }
     
     struct GeneratorSC* gensc;
     struct WorkerSC* worksc;
