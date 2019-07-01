@@ -1,18 +1,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
- 
+#include <unistd.h>
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 typedef enum {FILTERED, PRIME} RESPONSE;
 
+int * latencies;
+int proc_;
+int n_;
+
+int _boffset (int a) {
+  return (n_-1)*a - (a-1)*a/2;
+}
+
+int _eoffset (int a, int b) {
+  int min = MIN(a,b);
+  int max = MAX(a,b);
+  int boffset_ = _boffset(min);
+  return boffset_+max-min-1;
+}
+
+
+int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
+  usleep(latencies[_eoffset(proc_, dest)]);
+  return PMPI_Ssend(buf, count, datatype, dest, tag, comm);
+}
 
 void generator (int n) {
   MPI_Status status;
   int * primes = malloc(n*sizeof(int));
   primes[0] = 2;
   int next = 3;
-  while(1) {
+  while(1) { 
     MPI_Ssend(NULL, 0, MPI_INT, 1, next, MPI_COMM_WORLD); // send next thing into the pipeline
     next+=2;
     RESPONSE r;
@@ -68,6 +90,28 @@ int main(int argc, char* argv[]) {
     MPI_Init(NULL, NULL);
     MPI_Comm_size(MPI_COMM_WORLD, &n);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    proc_ = rank;
+    
+    int n_edges = n*(n-1)/2; 
+    
+    latencies = malloc(n_edges*sizeof(int));
+    char filename[11];
+    sprintf(filename, "lat_%d", n);
+    FILE * f = fopen(filename, "r");
+    if (!f) {
+      printf ("missing latency file for this configuratinon\n");
+      MPI_Finalize();
+      return 1;
+    }
+    char buf[15];
+    for (int i = 0; i < n_edges; i++) {
+      fgets(buf, 10, f);
+      latencies[i] = atoi(buf);
+    }
+    
+    
+    
     
     switch (rank) {
       case 0:

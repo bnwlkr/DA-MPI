@@ -5,9 +5,9 @@
 #include "dampi.h"
 #include <time.h>
 #include <stdlib.h>
+#include "profile.h"
 
-
-typedef enum {FILTERED, PRIME, GOTOAIRLOCK, NEXT, DIE} MESSAGE;
+typedef enum {FILTERED, PRIME, GOTOAIRLOCK, NEXTm, DIE} MESSAGE;
 
 struct GeneratorSC {
   int n;
@@ -22,13 +22,21 @@ struct WorkerSC {
   int prime;
 };
 
+int* latencies;
+
+int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
+  usleep(latencies[eoffset(info->proc, info->rankprocs[dest])]);
+  return PMPI_Ssend(buf, count, datatype, dest, tag, comm);
+}
+
+
 void generator(void* arg) {
   struct GeneratorSC * gensc = (struct GeneratorSC*)arg;
   int n = gensc->n;
   MPI_Status status;
   int recv;
   do {
-    DAMPI_Send(&gensc->next, 1, MPI_INT, 1, NEXT, MPI_COMM_WORLD);
+    DAMPI_Send(&gensc->next, 1, MPI_INT, 1, NEXTm, MPI_COMM_WORLD);
     gensc->next+=2;
     DAMPI_Recv(&recv, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     if (status.MPI_TAG==PRIME) {
@@ -51,7 +59,7 @@ void worker (void* arg) {
   int recv = 9;
   do {
     DAMPI_Recv(&recv, 1, MPI_INT, rank-1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    if (status.MPI_TAG == NEXT) {
+    if (status.MPI_TAG == NEXTm) {
       if (worksc->prime == -1 || worksc->prime%recv == 0) {
           DAMPI_Send(&recv, 1, MPI_INT, 0, worksc->prime == -1 ? PRIME : FILTERED, MPI_COMM_WORLD);
           worksc->prime = worksc->prime == -1 ? recv : worksc->prime;
@@ -59,7 +67,7 @@ void worker (void* arg) {
             DAMPI_Send(&worksc->prime, 1, MPI_INT, rank+1, GOTOAIRLOCK, MPI_COMM_WORLD);
           }
         } else if (worksc->prime%recv) {
-          DAMPI_Send(&recv, 1, MPI_INT, rank+1, NEXT, MPI_COMM_WORLD);
+          DAMPI_Send(&recv, 1, MPI_INT, rank+1, NEXTm, MPI_COMM_WORLD);
         }
     } else if (status.MPI_TAG == GOTOAIRLOCK) {
       if (rank < n-1) { 
@@ -85,13 +93,31 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &n);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Get_processor_name(procname, &len);
-  
     
+    int n_edges = n*(n-1)/2; 
+    
+    latencies = malloc(n_edges*sizeof(int));
+    char filename[11];
+    sprintf(filename, "lat_%d", n);
+    FILE * f = fopen(filename, "r");
+    if (!f) {
+      printf ("missing latency file for this configuratinon\n");
+      MPI_Finalize();
+      return 1;
+    }
+    char buf[15];
+    for (int i = 0; i < n_edges; i++) {
+      fgets(buf, 10, f);
+      latencies[i] = atoi(buf);
+    }
+    
+  
     if (DAMPI_Register(rank, n, 2, generator, worker)) {
       printf("no profile file found for this configuration\n");
       MPI_Finalize();
       return 0;
     }
+    DAMPI_Diag();
     
     struct GeneratorSC* gensc;
     struct WorkerSC* worksc;

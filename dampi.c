@@ -46,7 +46,7 @@ static void destroy_windows () {
 
 static int read_profile () {
   char filename[11];
-  sprintf(filename, "dampi_p_%d", info->n);
+  sprintf(filename, "prof_%d", info->n);
   FILE * f = fopen(filename, "r");
   if (!f) return 1;
   char buf[15];
@@ -62,7 +62,7 @@ static int read_profile () {
 static void write_profile () {
   if (info->proc == 0) {
     char filename[11];
-    sprintf(filename, "dampi_p_%d", info->n);
+    sprintf(filename, "prof_%d", info->n);
     FILE* f = fopen(filename, "w");
     fprintf(f, "%d\n", info->bnode);
     for (int i = 0; i < info->n_edges; i++) {

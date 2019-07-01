@@ -14,7 +14,7 @@ int DAMPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int 
     MPI_Accumulate(&inc, 1, MPI_INT, info->bnode, eoffset(dest, info->rank), 1, MPI_INT, MPI_SUM, info->freqwin);
     MPI_Win_unlock(info->bnode, info->freqwin);
   }
-  return MPI_Send(buf, count, datatype, info->rankprocs[dest], tag, comm);            
+  return MPI_Ssend(buf, count, datatype, info->rankprocs[dest], tag, comm);            
 }
 
 

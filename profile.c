@@ -53,7 +53,7 @@ static void respond (char* data) {
     MPI_Recv(data, DATA_SIZE, MPI_BYTE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     switch (status.MPI_TAG) {
       case REQUEST:
-        MPI_Ssend(data, DATA_SIZE, MPI_BYTE, status.MPI_SOURCE, RESPONSE, MPI_COMM_WORLD);
+        MPI_Send(data, DATA_SIZE, MPI_BYTE, status.MPI_SOURCE, RESPONSE, MPI_COMM_WORLD);
         break;
       default:
         return;
@@ -68,7 +68,7 @@ static void measure (char* data) {
   for (int i = info->proc+1; i < info->n; i++) {
     double t0 = MPI_Wtime();
     for (int j = 0; j < TRIALS; j++) {
-      MPI_Ssend(data, DATA_SIZE, MPI_BYTE, i, REQUEST, MPI_COMM_WORLD);
+      MPI_Send(data, DATA_SIZE, MPI_BYTE, i, REQUEST, MPI_COMM_WORLD);
       MPI_Recv(data, DATA_SIZE, MPI_BYTE, i, RESPONSE, MPI_COMM_WORLD, &status);
     }
     double t1 = MPI_Wtime();
