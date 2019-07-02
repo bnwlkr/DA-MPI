@@ -125,7 +125,6 @@ int main(int argc, char** argv) {
       return 0;
     }
     
-    
     struct GeneratorSC* gensc;
     struct WorkerSC* worksc;
     
@@ -150,6 +149,17 @@ int main(int argc, char** argv) {
       }
     }
     
+    if (info->proc == info->bnode) {
+      char filename[20];
+      sprintf(filename, "prime_map_%d", info->n);
+      FILE* f = fopen(filename, "w");
+      for (int i = 0; i < info->n; i++) {
+        fprintf(f, "%d\n", info->rankprocs[i]);
+      }
+      fclose(f);
+    }
+    
+    DAMPI_Diag();
     
     DAMPI_Finalize();
     MPI_Finalize(); 

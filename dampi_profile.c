@@ -34,11 +34,10 @@ int main (int argc, char* argv[]) {
   int n_edges = n*(n-1)/2;
   latencies = malloc(sizeof(long)*n_edges);
   for (int i = 0; i < n_edges; i++) {
-//    latencies[i] = 0;
-    latencies[i] = rand() % 999999999;
-//    if (i==0) latencies[i] = 999999999;
+    latencies[i] = 0;
   }
-
+  
+  
   DAMPI_Profile(proc, n);
   
   if (!proc) {
@@ -50,6 +49,7 @@ int main (int argc, char* argv[]) {
     }
     fclose(f);
   }
+  
   
   MPI_Finalize();
 }

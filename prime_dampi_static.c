@@ -12,7 +12,9 @@ typedef enum {FILTERED, PRIME} RESPONSE;
 
 long * latencies;
 int proc_;
+int rank_;
 int n_;
+int * rankprocs;
 
 int _boffset (int a) {
   return (n_-1)*a - (a-1)*a/2;
@@ -29,10 +31,22 @@ int _eoffset (int a, int b) {
 int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
   struct timespec ts;
   ts.tv_sec = 0;
-  ts.tv_nsec = latencies[_eoffset(proc_, dest)];
+  ts.tv_nsec = latencies[_eoffset(proc_, rankprocs[dest])];
   nanosleep (&ts, NULL);
-  return PMPI_Ssend(buf, count, datatype, dest, tag, comm);
+  return PMPI_Ssend(buf, count, datatype, rankprocs[dest], tag, comm);
 }
+
+int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status * status) {
+  int res = PMPI_Recv(buf, count, datatype, source == MPI_ANY_SOURCE ? MPI_ANY_SOURCE : rankprocs[source], tag, comm, status);
+  for (int i = 0; i < n_; i++) {
+    if (rankprocs[i] == status->MPI_SOURCE) {
+      status->MPI_SOURCE = i;
+      break;
+    }
+  }
+  return res;
+}
+
 
 void generator (int n) {
   MPI_Status status;
@@ -52,7 +66,7 @@ void generator (int n) {
       }
     }
   }
-  MPI_Ssend(NULL, 0, MPI_INT, 1, 0, MPI_COMM_WORLD);
+  MPI_Send(NULL, 0, MPI_INT, 1, 0, MPI_COMM_WORLD);
 }
 
 
@@ -97,7 +111,7 @@ int main(int argc, char* argv[]) {
     int n_edges = n*(n-1)/2; 
     
     latencies = malloc(n_edges*sizeof(long));
-    char filename[11];
+    char filename[20];
     sprintf(filename, "lat_%d", n);
     FILE * f = fopen(filename, "r");
     if (!f) {
@@ -110,8 +124,27 @@ int main(int argc, char* argv[]) {
       fgets(buf, 15, f);
       latencies[i] = atoi(buf);
     }
-    
+    fclose(f);
   
+
+    
+    rankprocs = malloc(sizeof(int)*n);
+    
+    sprintf(filename, "prime_map_%d", n);
+    f = fopen(filename, "r");
+    for (int i = 0; i < n; i++) {
+      fgets(buf, 15, f);
+      rankprocs[i] = atoi(buf);
+    }
+    fclose(f);
+    
+    
+    for (int i = 0; i < n; i++) {
+      if (rankprocs[i] == proc_) {
+        rank = rank_ = i;
+      }
+    }
+    
     
     switch (rank) {
       case 0:

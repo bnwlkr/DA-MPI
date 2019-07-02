@@ -91,16 +91,14 @@ int DAMPI_Airlock (int migrate) {
       MPI_Put(&info->bt->valid, 1, MPI_INT, info->bnode, 2, 1, MPI_INT, info->bwin);
     }
   } else {
-    if (counter++ % 10 == 0) {
-      get_bt(info->bt);
-      if (info->bt->valid) {
-        if (info->bt->a == -1) {
-          info->bt->b = should_migrate(info->bt);
-          if (info->bt->b != -1) {
-            info->bt->a = info->rank;
-            if (info->proc != info->bnode) {
-              MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
-            }
+    get_bt(info->bt);
+    if (info->bt->valid) {
+      if (info->bt->a == -1) {
+        info->bt->b = should_migrate(info->bt);
+        if (info->bt->b != -1) {
+          info->bt->a = info->rank;
+          if (info->proc != info->bnode) {
+            MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
           }
         }
       }
