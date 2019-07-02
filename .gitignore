@@ -1,7 +1,7 @@
 .DS_Store
 dampi_profile
 prime_dampi
-prme_no_dampi
-prof_*
-lat_*
+prime_no_dampi
+prime_dampi_profile
+prime_dampi_static
 *.o

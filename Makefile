@@ -22,4 +22,4 @@ prime_no_dampi: prime_no_dampi.c $(SRC) $(HDR)
 all: prime_dampi_profile prime_dampi prime_no_dampi dampi_profile prime_dampi_static
 
 clean:
-	rm -rf prime_dampi_profile prime_dampi prime_no_dampi dampi_profile prof_* lat_*
+	rm -rf prime_dampi_profile prime_dampi prime_no_dampi dampi_profile
