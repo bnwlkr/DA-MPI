@@ -61,7 +61,7 @@ Secondly, a smarter method of checking for migrations would likely yield a perfo
 
 
 
-### PROPOSAL
+## PROPOSAL
 
 MPI’s most common use case is in High-Performance Computing (HPC). As many HPC tasks are time-critical (e.g. weather prediction), small optimizations can be extremely valuable. 
 
