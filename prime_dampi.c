@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "profile.h"
 
+
 typedef enum {FILTERED, PRIME, GOTOAIRLOCK, NEXTm, DIE} MESSAGE;
 
 struct GeneratorSC {
@@ -25,7 +26,10 @@ struct WorkerSC {
 int* latencies;
 
 int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
-  usleep(latencies[eoffset(info->proc, info->rankprocs[dest])]);
+  struct timespec ts;
+  ts.tv_sec = 0;
+  ts.tv_nsec = latencies[eoffset(info->proc, info->rankprocs[dest])];
+  nanosleep (&ts, NULL);
   return PMPI_Ssend(buf, count, datatype, dest, tag, comm);
 }
 
@@ -94,6 +98,8 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Get_processor_name(procname, &len);
     
+    
+    
     int n_edges = n*(n-1)/2; 
     
     latencies = malloc(n_edges*sizeof(int));
@@ -117,7 +123,6 @@ int main(int argc, char** argv) {
       MPI_Finalize();
       return 0;
     }
-    DAMPI_Diag();
     
     struct GeneratorSC* gensc;
     struct WorkerSC* worksc;
@@ -150,11 +155,9 @@ int main(int argc, char** argv) {
       printf("]\n");
     }
     
-    free(gensc);
-    free(worksc);
     
     
-    DAMPI_Finalize();
+    //DAMPI_Finalize();
     MPI_Finalize(); 
     return 0;
 }

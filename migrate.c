@@ -6,8 +6,10 @@
 #include "migrate.h"
 
 static void get_bt (struct BNodeTable* bt) {
-  MPI_Get(bt, 3, MPI_INT, info->bnode, 0, 3, MPI_INT, info->bwin);
-  MPI_Get(bt->freq, info->n_edges, MPI_INT, info->bnode, 0, info->n_edges, MPI_INT, info->freqwin);
+  if (info->proc != info->bnode) {
+    MPI_Get(bt, 3, MPI_INT, info->bnode, 0, 3, MPI_INT, info->bwin);
+    MPI_Get(bt->freq, info->n_edges, MPI_INT, info->bnode, 0, info->n_edges, MPI_INT, info->freqwin);
+  }
 }
 
 double value (struct BNodeTable* bt, int* rankprocs) {
@@ -66,7 +68,6 @@ static void swap(int a, int b) {
   MPI_Sendrecv(info->suitcase, info->sc_size, MPI_BYTE, other_proc, 0, temp, info->sc_size, MPI_BYTE, other_proc, 0, MPI_COMM_WORLD, &status);
   memcpy(info->suitcase, temp, info->sc_size);
   free(temp);
-  printf("SWAP %d <--> %d\n", info->rank, other_rank);
   info->rank = other_rank;
 }
 
@@ -83,8 +84,10 @@ static void UNLOCKBN () {
 int DAMPI_Airlock (int migrate) {
   LOCKBN();
   if (!migrate) {
-    int put = 0; 
-    MPI_Put(&put, 1, MPI_INT, info->bnode, 2, 1, MPI_INT, info->bwin);
+    info->bt->valid = 0;
+    if (info->proc != info->bnode) {
+      MPI_Put(&info->bt->valid, 1, MPI_INT, info->bnode, 2, 1, MPI_INT, info->bwin);
+    }
   } else {
     get_bt(info->bt);
     if (info->bt->valid) {
@@ -92,7 +95,9 @@ int DAMPI_Airlock (int migrate) {
         info->bt->b = should_migrate(info->bt);
         if (info->bt->b != -1) {
           info->bt->a = info->rank;
-          MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+          if (info->proc != info->bnode) {
+            MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+          }
         }
       }
     }

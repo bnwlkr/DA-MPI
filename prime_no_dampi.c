@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <unistd.h>
+#include <time.h>
+
+#if __STDC_VERSION__ >= 199901L
+#define _XOPEN_SOURCE 600
+#else
+#define _XOPEN_SOURCE 500
+#endif /* __STDC_VERSION__ */
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -24,8 +31,11 @@ int _eoffset (int a, int b) {
 }
 
 
-int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
-  usleep(latencies[_eoffset(proc_, dest)]);
+int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
+  struct timespec ts;
+  ts.tv_sec = 0;
+  ts.tv_nsec = latencies[_eoffset(proc_, dest)];
+  nanosleep (&ts, NULL);
   return PMPI_Ssend(buf, count, datatype, dest, tag, comm);
 }
 
@@ -35,10 +45,10 @@ void generator (int n) {
   primes[0] = 2;
   int next = 3;
   while(1) { 
-    MPI_Ssend(NULL, 0, MPI_INT, 1, next, MPI_COMM_WORLD); // send next thing into the pipeline
+    MPI_Send(NULL, 0, MPI_INT, 1, next, MPI_COMM_WORLD); // send next thing into the pipeline
     next+=2;
     RESPONSE r;
-    MPI_Recv(&r, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status); // pipeline completed processing last input
+    MPI_Recv(&r, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status); 
     if (r == PRIME) {
       primes[status.MPI_SOURCE] = status.MPI_TAG; // add new prime to list
       if (status.MPI_SOURCE == n-1) {
@@ -61,22 +71,22 @@ void worker (int rank, int n) {
   MPI_Recv(NULL, 0, MPI_INT, rank-1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
   int prime = status.MPI_TAG;
   RESPONSE r = PRIME;
-  MPI_Ssend(&r, 1, MPI_INT, 0, prime, MPI_COMM_WORLD); // send prime to generator
+  MPI_Send(&r, 1, MPI_INT, 0, prime, MPI_COMM_WORLD); // send prime to generator
   int value;
   while (1) {
     MPI_Recv(NULL, 0, MPI_INT, rank-1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     value = status.MPI_TAG;
     if (!value && rank < n-1) {
-      MPI_Ssend(NULL, 0, MPI_INT, rank+1, 0, MPI_COMM_WORLD);
+      MPI_Send(NULL, 0, MPI_INT, rank+1, 0, MPI_COMM_WORLD);
       break;
     } else if (!value && rank == n-1) {
       break;
     }
     if (prime%value) {
-      MPI_Ssend(NULL, 0, MPI_INT, rank+1, value, MPI_COMM_WORLD);
+      MPI_Send(NULL, 0, MPI_INT, rank+1, value, MPI_COMM_WORLD);
     } else {
       r = FILTERED;
-      MPI_Ssend(&r, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+      MPI_Send(&r, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
     }
   }
 }
@@ -92,6 +102,7 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     
     proc_ = rank;
+    n_=n;
     
     int n_edges = n*(n-1)/2; 
     

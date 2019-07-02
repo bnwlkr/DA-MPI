@@ -123,8 +123,13 @@ void DAMPI_Start(dampi_func f, int sc_size, void** suitcase) {
   MPI_Win win;
   MPI_Win_create(rank_nums, info->proc==info->bnode ? 2*n*sizeof(int) : 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
   MPI_Win_fence(0, win);
-  MPI_Put(&myfunc, 1, MPI_INT, info->bnode, info->rank, 1, MPI_INT, win);
-  MPI_Put(&sc_size, 1, MPI_INT, info->bnode, info->rank+n, 1, MPI_INT, win);
+  if (info->proc != info->bnode) {
+    MPI_Put(&myfunc, 1, MPI_INT, info->bnode, info->rank, 1, MPI_INT, win);
+    MPI_Put(&sc_size, 1, MPI_INT, info->bnode, info->rank+n, 1, MPI_INT, win);
+  } else {
+    rank_nums[info->rank] = myfunc;
+    rank_nums[info->rank+n] = sc_size;
+  }
   MPI_Win_fence(0, win);
   MPI_Bcast(rank_nums, n*2, MPI_INT, info->bnode, MPI_COMM_WORLD);
   int max_size = 0;

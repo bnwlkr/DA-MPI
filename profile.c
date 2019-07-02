@@ -79,7 +79,12 @@ static void measure (char* data) {
 
 static void sync_delays (MPI_Win* delay_win) {
   MPI_Win_fence(0, *delay_win);
-  MPI_Put(&info->delays[boffset(info->proc)], info->n-info->proc-1, MPI_DOUBLE, 0, boffset(info->proc), info->n-info->proc-1, MPI_DOUBLE, *delay_win);
+  if (info->proc != 0) {
+    MPI_Put(&info->delays[boffset(info->proc)], info->n-info->proc-1, MPI_DOUBLE, 0, boffset(info->proc), info->n-info->proc-1, MPI_DOUBLE, *delay_win);
+  } else {
+    memcpy(info->delays, &info->delays[boffset(info->proc)], info->n-info->proc-1);
+  }
+  
   MPI_Win_fence(0, *delay_win);
   MPI_Bcast(info->delays, info->n_edges, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }

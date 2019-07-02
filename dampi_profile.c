@@ -5,6 +5,7 @@
 #include "dampi.h"
 #include "profile.h"
 
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
@@ -12,7 +13,10 @@ int* latencies;
 int proc_;
 
 int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
-  usleep(latencies[eoffset(proc_, dest)]);
+  struct timespec ts;
+  ts.tv_sec = 0;
+  ts.tv_nsec = latencies[eoffset(proc_, dest)];
+  nanosleep (&ts, NULL);
   return PMPI_Send(buf, count, datatype, dest, tag, comm);
 }
 
@@ -30,12 +34,10 @@ int main (int argc, char* argv[]) {
   int n_edges = n*(n-1)/2;
   latencies = malloc(sizeof(int)*n_edges);
   for (int i = 0; i < n_edges; i++) {
-    latencies[i] = rand()%1000000;
+    latencies[i] = rand()%100000000;
   }
 
-  
   DAMPI_Profile(proc, n);
-  
   
   if (!proc) {
     char filename[11];
