@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
     sprintf(filename, "lat_%d", n);
     FILE * f = fopen(filename, "r");
     if (!f) {
-      printf ("missing latency file for this configuratinon\n");
+      printf ("missing latency file for this configuration\n");
       MPI_Finalize();
       return 1;
     }
