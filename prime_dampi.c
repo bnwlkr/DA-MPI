@@ -13,7 +13,6 @@ typedef enum {FILTERED, PRIME, GOTOAIRLOCK, NEXTm, DIE} MESSAGE;
 struct GeneratorSC {
   int n;
   int next;
-  int primes[];
 };
 
 
@@ -23,14 +22,14 @@ struct WorkerSC {
   int prime;
 };
 
-int* latencies;
+long* latencies;
 
-int MPI_Ssend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
+int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
   struct timespec ts;
   ts.tv_sec = 0;
   ts.tv_nsec = latencies[eoffset(info->proc, info->rankprocs[dest])];
   nanosleep (&ts, NULL);
-  return PMPI_Ssend(buf, count, datatype, dest, tag, comm);
+  return PMPI_Send(buf, count, datatype, dest, tag, comm);
 }
 
 
@@ -44,8 +43,10 @@ void generator(void* arg) {
     gensc->next+=2;
     DAMPI_Recv(&recv, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     if (status.MPI_TAG==PRIME) {
-      gensc->primes[status.MPI_SOURCE] = recv;
+      printf(" %d ", recv);
+      fflush(stdout);
       if (status.MPI_SOURCE == n-1) {
+        printf("\n");
         DAMPI_Airlock(0);
         DAMPI_Send(&recv, 1, MPI_INT, 1, DIE, MPI_COMM_WORLD);
         break;
@@ -102,7 +103,7 @@ int main(int argc, char** argv) {
     
     int n_edges = n*(n-1)/2; 
     
-    latencies = malloc(n_edges*sizeof(int));
+    latencies = malloc(n_edges*sizeof(long));
     char filename[11];
     sprintf(filename, "lat_%d", n);
     FILE * f = fopen(filename, "r");
@@ -129,11 +130,12 @@ int main(int argc, char** argv) {
     
     switch (rank) {
       case 0: {
-        gensc = malloc(sizeof(struct GeneratorSC) + n*sizeof(int));
+        gensc = malloc(sizeof(struct GeneratorSC));
         gensc->n = n;
         gensc->next = 3;
-        gensc->primes[0] = 2;
-        DAMPI_Start(generator, sizeof(struct GeneratorSC) + n*sizeof(int), (void**)&gensc);
+        printf (" %d ", 2);
+        DAMPI_Start(generator, sizeof(struct GeneratorSC), (void**)&gensc);
+        free (gensc);
         break;
       }
       default: {
@@ -142,22 +144,14 @@ int main(int argc, char** argv) {
         worksc->rank = rank;
         worksc->prime = -1;
         DAMPI_Start(worker, sizeof(struct WorkerSC), (void**)&worksc);
+        free (worksc);
         break;
       }
     }
     
-    if (!DAMPI_Rank()) {
-      struct GeneratorSC* ogensc = ((struct GeneratorSC*)(rank==0?(void*)gensc:(void*)worksc));
-      printf("[");
-      for (int i = 0; i < n; i++) {
-        printf(" %d ", ogensc->primes[i]);
-      }
-      printf("]\n");
-    }
     
     
-    
-    //DAMPI_Finalize();
+    DAMPI_Finalize();
     MPI_Finalize(); 
     return 0;
 }

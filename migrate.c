@@ -5,6 +5,8 @@
 
 #include "migrate.h"
 
+int counter = 0;
+
 static void get_bt (struct BNodeTable* bt) {
   if (info->proc != info->bnode) {
     MPI_Get(bt, 3, MPI_INT, info->bnode, 0, 3, MPI_INT, info->bwin);
@@ -89,14 +91,16 @@ int DAMPI_Airlock (int migrate) {
       MPI_Put(&info->bt->valid, 1, MPI_INT, info->bnode, 2, 1, MPI_INT, info->bwin);
     }
   } else {
-    get_bt(info->bt);
-    if (info->bt->valid) {
-      if (info->bt->a == -1) {
-        info->bt->b = should_migrate(info->bt);
-        if (info->bt->b != -1) {
-          info->bt->a = info->rank;
-          if (info->proc != info->bnode) {
-            MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+    if (counter++ % 5 == 0) {
+      get_bt(info->bt);
+      if (info->bt->valid) {
+        if (info->bt->a == -1) {
+          info->bt->b = should_migrate(info->bt);
+          if (info->bt->b != -1) {
+            info->bt->a = info->rank;
+            if (info->proc != info->bnode) {
+              MPI_Put(info->bt, 2, MPI_INT, info->bnode, 0, 2, MPI_INT, info->bwin);
+            }
           }
         }
       }

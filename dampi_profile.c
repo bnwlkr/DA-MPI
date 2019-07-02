@@ -9,7 +9,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-int* latencies;
+long* latencies;
 int proc_;
 
 int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
@@ -32,9 +32,10 @@ int main (int argc, char* argv[]) {
   proc_=proc;
   srand(time(NULL));
   int n_edges = n*(n-1)/2;
-  latencies = malloc(sizeof(int)*n_edges);
+  latencies = malloc(sizeof(long)*n_edges);
   for (int i = 0; i < n_edges; i++) {
-    latencies[i] = rand()%100000000;
+    latencies[i] = rand()%1000000000;
+    if (i==0) latencies[i] = 999999999;
   }
 
   DAMPI_Profile(proc, n);
@@ -44,7 +45,7 @@ int main (int argc, char* argv[]) {
     sprintf(filename, "lat_%d", n);
     FILE* f = fopen(filename, "w");
     for (int i = 0; i < info->n_edges; i++) {
-      fprintf(f, "%d\n", latencies[i]);
+      fprintf(f, "%ld\n", latencies[i]);
     }
     fclose(f);
   }

@@ -1,7 +1,7 @@
 SRC = migrate.c dampi.c profile.c sendrecv.c
 HDR = migrate.h dampi.h profile.h sendrecv.h
 
-CC=/usr/local/mpi/mpich-3.1.4/bin/mpicc -std=gnu99
+CC=mpicc -std=gnu99
 
 dampi_profile: dampi_profile.c $(SRC) $(HDR)
 	$(CC) -o dampi_profile dampi_profile.c $(SRC)

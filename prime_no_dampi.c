@@ -4,18 +4,13 @@
 #include <unistd.h>
 #include <time.h>
 
-#if __STDC_VERSION__ >= 199901L
-#define _XOPEN_SOURCE 600
-#else
-#define _XOPEN_SOURCE 500
-#endif /* __STDC_VERSION__ */
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 typedef enum {FILTERED, PRIME} RESPONSE;
 
-int * latencies;
+long * latencies;
 int proc_;
 int n_;
 
@@ -41,27 +36,22 @@ int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int ta
 
 void generator (int n) {
   MPI_Status status;
-  int * primes = malloc(n*sizeof(int));
-  primes[0] = 2;
   int next = 3;
+  printf(" %d ", 2); fflush(stdout);
   while(1) { 
     MPI_Send(NULL, 0, MPI_INT, 1, next, MPI_COMM_WORLD); // send next thing into the pipeline
     next+=2;
     RESPONSE r;
     MPI_Recv(&r, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status); 
     if (r == PRIME) {
-      primes[status.MPI_SOURCE] = status.MPI_TAG; // add new prime to list
+      printf(" %d ", status.MPI_TAG);
+      fflush(stdout);
       if (status.MPI_SOURCE == n-1) {
+        printf("\n");
         break;
       }
     }
   }
-  printf("[");
-  for (int i = 0; i < n; i++) {
-    printf(" %d ", primes[i]);
-  }
-  printf("]\n");
-  free(primes);
   MPI_Ssend(NULL, 0, MPI_INT, 1, 0, MPI_COMM_WORLD);
 }
 
@@ -106,7 +96,7 @@ int main(int argc, char* argv[]) {
     
     int n_edges = n*(n-1)/2; 
     
-    latencies = malloc(n_edges*sizeof(int));
+    latencies = malloc(n_edges*sizeof(long));
     char filename[11];
     sprintf(filename, "lat_%d", n);
     FILE * f = fopen(filename, "r");
