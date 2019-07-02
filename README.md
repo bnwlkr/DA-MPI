@@ -17,7 +17,7 @@ After it has found latencies between nodes, it determines which node is the best
 
 Nodes use the information stored at the best-connected node regularly to determine whether or not they should perform a migration. At regular intervals in the running programs, nodes enter a function where they make this decision. Every assignment of ranks to processes has a value, defined as:
  
------ SUM HERE
+![config value](sum.png)
 
 At some regular interval (programmer-defined) a node computes this value for all configurations that involve it swapping with some other node. If it detects a configuration that has a higher value than the current one, it will post a migration request at the bnode. When all the other nodes enter the migration-checking zone (`DAMPI_Airlock`), they see that another node has requested a swap and act accordingly.
 
